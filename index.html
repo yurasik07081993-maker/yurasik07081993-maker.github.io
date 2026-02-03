@@ -33,17 +33,15 @@
             cursor: default; 
         }
         
-        /* Канвас по умолчанию (курсор будет управляться через JS) */
         canvas { display: none; touch-action: none; background: #fff; }
         
-        /* ИЗМЕНЕНО: Добавлено cursor: default, чтобы в меню курсор ВСЕГДА был виден */
         #start-screen, #game-over, #victory-screen, #briefing-overlay {
             position: absolute; top: 0; left: 0; width: 100%; height: 100%;
             background: radial-gradient(circle, #2c3e50 0%, #000 100%); 
             display: flex; flex-direction: column; align-items: center; justify-content: center; z-index: 100;
             color: white; font-family: sans-serif; text-transform: uppercase; letter-spacing: 2px;
             overflow: hidden;
-            cursor: default !important; /* Принудительно показываем курсор в меню */
+            cursor: default !important;
         }
 
         #game-over, #victory-screen, #briefing-overlay { display: none; z-index: 110; }
@@ -217,40 +215,26 @@
     <script>
         const translations = {
             'ru': {
-                title: "СТАЛЬНОЙ РУБЕЖ.",
-                subtitle: "ВЫЖИВАНИЕ.",
-                startBtn: "ИНИЦИИРОВАТЬ БОЙ",
+                title: "СТАЛЬНОЙ РУБЕЖ.", subtitle: "ВЫЖИВАНИЕ.", startBtn: "ИНИЦИИРОВАТЬ БОЙ",
                 briefLabel: "ПРИКАЗ<br>ГЕНЕРАЛА",
                 brief1: "Боец, ситуация критическая! Твоя задача — продержаться 3 минуты до прибытия подкрепления. <br><br>Используй автономные турели, ракетную установку и ручное орудие. Спец-оружие ограничено — у тебя всего 5 зарядов! <br><br>Удачи, ты — наша последняя надежда!",
-                acceptBtn: "ПРИНЯТО",
-                gameOver: "ОБЪЕКТ УНИЧТОЖЕН",
-                returnBtn: "ВЕРНУТЬСЯ В ШТАБ",
-                victory: "ПОБЕДА!",
-                kills: "УНИЧТОЖЕНО ВРАГОВ: ",
-                level2Label: "ВНИМАНИЕ!<br>УРОВЕНЬ 2",
+                acceptBtn: "ПРИНЯТО", gameOver: "ОБЪЕКТ УНИЧТОЖЕН", returnBtn: "ВЕРНУТЬСЯ В ШТАБ", victory: "ПОБЕДА!",
+                kills: "УНИЧТОЖЕНО ВРАГОВ: ", level2Label: "ВНИМАНИЕ!<br>УРОВЕНЬ 2",
                 level2Text: "Враг отступает, но выслал элитные отряды дронов. <br><br>Их скорость увеличена, броня усилена. <br><br>Держите оборону еще 3 минуты. Штаб высылает доп. припасы. Действуй!",
                 level3Label: "ТРЕВОГА!<br>ФИНАЛ",
                 level3Text: "Генерал: Враг загнал нас в пустынный сектор! <br><br>Жара плавит броню, но мы не сдадимся.<br><br>Выживи любой ценой! Это наш последний рубеж.",
-                clean: "ЗАЧИСТКА",
-                pause: "ПАУЗА"
+                clean: "ЗАЧИСТКА", pause: "ПАУЗА"
             },
             'en': {
-                title: "STEEL FRONTIER.",
-                subtitle: "SURVIVAL.",
-                startBtn: "INITIATE BATTLE",
+                title: "STEEL FRONTIER.", subtitle: "SURVIVAL.", startBtn: "INITIATE BATTLE",
                 briefLabel: "GENERAL'S<br>ORDER",
                 brief1: "Soldier, the situation is critical! Your task is to hold out for 3 minutes until reinforcements arrive. <br><br>Use autonomous turrets, rocket launchers, and your main gun. Special weapons are limited — only 5 charges! <br><br>Good luck, you are our last hope!",
-                acceptBtn: "ACCEPTED",
-                gameOver: "UNIT DESTROYED",
-                returnBtn: "RETURN TO BASE",
-                victory: "VICTORY!",
-                kills: "ENEMIES DESTROYED: ",
-                level2Label: "WARNING!<br>LEVEL 2",
+                acceptBtn: "ACCEPTED", gameOver: "UNIT DESTROYED", returnBtn: "RETURN TO BASE", victory: "VICTORY!",
+                kills: "ENEMIES DESTROYED: ", level2Label: "WARNING!<br>LEVEL 2",
                 level2Text: "The enemy is retreating but sent elite drone squads. <br><br>Increased speed, reinforced armor. <br><br>Hold the line for another 3 minutes. HQ is sending supplies. Act now!",
                 level3Label: "ALARM!<br>FINAL",
                 level3Text: "General: The enemy has cornered us in the desert sector! <br><br>The heat melts armor, but we won't surrender.<br><br>Survive at any cost. This is our last frontier.",
-                clean: "CLEANUP",
-                pause: "PAUSED"
+                clean: "CLEANUP", pause: "PAUSED"
             }
         };
 
@@ -273,11 +257,9 @@
             document.getElementById('ui-btn-return-fail').innerText = t.returnBtn;
             document.getElementById('ui-btn-return-win').innerText = t.returnBtn;
             document.getElementById('ui-victory').innerText = t.victory;
-            if (document.getElementById('final-kills').innerText.includes(':')) {
-                 document.getElementById('final-kills').innerText = t.kills + kills;
-            }
         }
 
+        /* --- ОТРЕДАКТИРОВАННЫЙ БЛОК РЕКЛАМЫ (ТОЧЕЧНО) --- */
         let ysdk;
         function initYandexSDK() {
             if (typeof YaGames === 'undefined') return;
@@ -285,7 +267,7 @@
                 ysdk = ysdkInstance;
                 const lang = ysdk.environment.i18n.lang;
                 applyLanguage(lang);
-                console.log("Language detected: " + lang);
+                console.log("SDK Init: " + lang);
             });
         }
 
@@ -294,8 +276,8 @@
                 ysdk.adv.showFullscreenAdv({
                     callbacks: {
                         onOpen: () => { isPaused = true; },
-                        onClose: function(wasShown) { isPaused = false; },
-                        onError: function(error) { isPaused = false; }
+                        onClose: (wasShown) => { isPaused = false; },
+                        onError: (error) => { isPaused = false; }
                     }
                 });
             }
@@ -306,15 +288,18 @@
                 ysdk.adv.showRewardedVideo({
                     callbacks: {
                         onOpen: () => { isPaused = true; },
-                        onRewarded: () => { ultCharges += 3; },
+                        onRewarded: () => { 
+                            ultCharges += 3; // Выдаем награду за просмотр
+                        },
                         onClose: () => { isPaused = false; },
                         onError: (e) => { isPaused = false; }
                     }
                 });
             } else {
-                ultCharges += 3;
+                ultCharges += 3; // Тестовый режим без SDK
             }
         }
+        /* ----------------------------------------------- */
 
         initYandexSDK();
 
@@ -377,7 +362,6 @@
             let rockCount = (currentLevel === 3) ? 15 : 10;
             let treeType = (currentLevel === 3) ? 'cactus' : 'tree';
             let rockType = (currentLevel === 3) ? 'rock' : 'ice';
-
             for(let i=0; i<treeCount; i++) {
                 let safe = false, attempts = 0, tx, ty;
                 while(!safe && attempts < 50) {
@@ -387,32 +371,25 @@
                     for(let t of trees) if(Math.hypot(tx - t.x, ty - t.y) < 60*s) overlap = true;
                     if (tx < 350*s && ty > canvas.height - 350*s) overlap = true;
                     if (tx > canvas.width - 350*s && ty > canvas.height - 350*s) overlap = true;
-                    if (Math.abs(tx - canvas.width/2) < 200*s && ty < 150*s) overlap = true;
-                    if(!overlap) safe = true;
-                    attempts++;
+                    if(!overlap) safe = true; attempts++;
                 }
                 if(safe) trees.push({ x: tx, y: ty, s: Math.random()*0.5 + 0.4, type: treeType });
             }
-
             for(let i=0; i<rockCount; i++) {
                 let safe = false, attempts = 0, ix, iy;
                 while(!safe && attempts < 50) {
                     ix = Math.random() * canvas.width; iy = Math.random() * canvas.height;
                     let overlap = false;
                     if(Math.hypot(ix - player.x, iy - player.y) < 150*s) overlap = true;
-                    for(let t of trees) if(Math.hypot(ix - t.x, iy - t.y) < 70*s) overlap = true;
+                    for(let t of trees) if(Math.hypot(ix - t.x, ty - t.y) < 70*s) overlap = true;
                     for(let b of iceBlocks) if(Math.hypot(ix - b.x, iy - b.y) < 60*s) overlap = true;
                     if (ix < 350*s && iy > canvas.height - 350*s) overlap = true;
                     if (ix > canvas.width - 350*s && iy > canvas.height - 350*s) overlap = true;
-                    if (Math.abs(ix - canvas.width/2) < 200*s && iy < 150*s) overlap = true;
-                    if(!overlap) safe = true;
-                    attempts++;
+                    if(!overlap) safe = true; attempts++;
                 }
                 if(safe) iceBlocks.push({ x: ix, y: iy, s: Math.random()*0.6 + 0.3, type: rockType });
             }
-            if(currentLevel !== 3) {
-                for(let i=0; i<45; i++) snowflakes.push({ x: Math.random()*canvas.width, y: Math.random()*canvas.height, r: Math.random()*3*s + 1, v: Math.random()*1 + 0.5 });
-            }
+            if(currentLevel !== 3) for(let i=0; i<45; i++) snowflakes.push({ x: Math.random()*canvas.width, y: Math.random()*canvas.height, r: Math.random()*3*s + 1, v: Math.random()*1 + 0.5 });
             spawnSAM();
         }
 
@@ -491,7 +468,6 @@
             update() {
                 if(isPaused || isGameOver || briefingActive) return;
                 let targetA = Math.atan2(player.y - this.y, player.x - this.x);
-                if(this.type === 'boss') turrets.forEach(t => { if(Math.hypot(this.x - t.x, this.y - t.y) < 150*s) targetA += 0.8; });
                 this.vx = Math.cos(targetA) * this.speed; this.vy = Math.sin(targetA) * this.speed;
                 this.x += this.vx; this.y += this.vy; this.angle = targetA; this.pAng += 0.4;
             }
@@ -503,8 +479,6 @@
                     else { ctx.strokeStyle = '#2d3436'; ctx.fillStyle = '#636e72'; }
                     ctx.lineWidth = 4*s; ctx.beginPath();
                     ctx.moveTo(-16*s,-16*s); ctx.lineTo(16*s,16*s); ctx.moveTo(16*s,-16*s); ctx.lineTo(-16*s,16*s); ctx.stroke();
-                    const ps = [[-16,-16],[16,-16],[16,16],[-16,16]];
-                    ps.forEach(p => { ctx.save(); ctx.translate(p[0]*s, p[1]*s); ctx.rotate(this.pAng); ctx.fillStyle='rgba(0,0,0,0.3)'; ctx.fillRect(-9*s, -2*s, 18*s, 4*s); ctx.restore(); });
                     ctx.fillRect(-9*s, -9*s, 18*s, 18*s);
                     ctx.fillStyle = (currentLevel === 3) ? '#ffeaa7' : '#ff7675'; 
                     ctx.beginPath(); ctx.arc(0,0,4*s,0,Math.PI*2); ctx.fill();
@@ -516,8 +490,7 @@
                     ctx.fillStyle = '#2d3436'; ctx.fillRect(10*s,-7*s,32*s,14*s); ctx.restore();
                     ctx.fillStyle = 'rgba(0,0,0,0.5)'; ctx.fillRect(this.x-35*s, this.y-50*s, 70*s, 8*s);
                     let hpMultComp = currentLevel === 2 ? 1.2 : (currentLevel === 3 ? 1.5 : 1);
-                    let maxHpComp = 21 * hpMultComp;
-                    ctx.fillStyle = '#e74c3c'; ctx.fillRect(this.x-35*s, this.y-50*s, 70*s*(this.hp/maxHpComp), 8*s);
+                    ctx.fillStyle = '#e74c3c'; ctx.fillRect(this.x-35*s, this.y-50*s, 70*s*(this.hp/(21*hpMultComp)), 8*s);
                 }
                 ctx.restore();
             }
@@ -534,16 +507,13 @@
                 let best = null; let minDist = 800*s;
                 enemies.forEach(e => { let d = Math.hypot(this.x-e.x, this.y-e.y); if(d < minDist) { minDist = d; best = e; } });
                 if(best) {
-                    const bSpd = 22*s;
                     let targetA = Math.atan2(best.y - this.y, best.x - this.x);
                     let diff = targetA - this.angle;
                     while(diff < -Math.PI) diff += Math.PI*2; while(diff > Math.PI) diff -= Math.PI*2;
                     this.angle += diff * 0.15;
                     if(Math.abs(diff) < 0.2 && Date.now() - this.lastFire > 380) {
-                        const bx = 70 * s; const by = (this.side ? -10 : 10) * s; 
-                        const px = this.x + Math.cos(this.angle) * bx - Math.sin(this.angle) * by;
-                        const py = this.y + Math.sin(this.angle) * bx + Math.cos(this.angle) * by;
-                        projectiles.push({ x: px, y: py, v: {x: Math.cos(this.angle)*bSpd, y: Math.sin(this.angle)*bSpd}, power: 1, target: best, isHoming: false, isSecondary: true });
+                        const bSpd = 22*s;
+                        projectiles.push({ x: this.x, y: this.y, v: {x: Math.cos(this.angle)*bSpd, y: Math.sin(this.angle)*bSpd}, power: 1, isSecondary: true });
                         if(this.side) this.recoilL = 14; else this.recoilR = 14; this.side = !this.side;
                         this.lastFire = Date.now(); playSound('turret');
                     }
@@ -551,43 +521,32 @@
                 if(this.recoilL > 0) this.recoilL -= 2; if(this.recoilR > 0) this.recoilR -= 2;
             }
             draw() { 
-                ctx.save(); ctx.translate(this.x, this.y); ctx.fillStyle = '#2d3436'; ctx.beginPath(); ctx.arc(0, 0, 30*s, 0, Math.PI*2); ctx.fill(); ctx.strokeStyle = '#34495e'; ctx.lineWidth = 2*s; ctx.stroke();
+                ctx.save(); ctx.translate(this.x, this.y); ctx.fillStyle = '#2d3436'; ctx.beginPath(); ctx.arc(0, 0, 30*s, 0, Math.PI*2); ctx.fill(); 
                 ctx.rotate(this.angle); ctx.fillStyle = '#2f3542'; ctx.fillRect((10 - this.recoilL)*s, -14*s, 60*s, 8*s); ctx.fillRect((10 - this.recoilR)*s, 6*s, 60*s, 8*s);
-                ctx.fillStyle = '#7f8c8d'; ctx.fillRect((25 - this.recoilL)*s, -14*s, 5*s, 8*s); ctx.fillRect((25 - this.recoilR)*s, 6*s, 5*s, 8*s); ctx.fillRect((40 - this.recoilL)*s, -14*s, 5*s, 8*s); ctx.fillRect((40 - this.recoilR)*s, 6*s, 5*s, 8*s);
-                ctx.fillStyle = '#e74c3c'; ctx.fillRect((68 - this.recoilL)*s, -15*s, 6*s, 10*s); ctx.fillRect((68 - this.recoilR)*s, 5*s, 6*s, 10*s);
-                ctx.fillStyle = '#4a69bd'; ctx.beginPath(); ctx.moveTo(-20*s, -22*s); ctx.lineTo(15*s, -15*s); ctx.lineTo(25*s, 0); ctx.lineTo(15*s, 15*s); ctx.lineTo(-20*s, 22*s); ctx.closePath(); ctx.fill(); ctx.fillStyle = '#34495e'; ctx.fillRect(-10*s, -5*s, 25*s, 10*s);
-                if(this.teleportAnim > 0) { ctx.restore(); ctx.save(); ctx.translate(this.x, this.y); ctx.strokeStyle = '#54a0ff'; ctx.lineWidth = 4 * s; ctx.globalAlpha = this.teleportAnim / 20; ctx.beginPath(); ctx.arc(0, 0, (this.teleportAnim * 3) * s, 0, Math.PI*2); ctx.stroke(); } ctx.restore(); 
+                ctx.fillStyle = '#4a69bd'; ctx.beginPath(); ctx.moveTo(-20*s, -22*s); ctx.lineTo(25*s, 0); ctx.lineTo(-20*s, 22*s); ctx.fill(); ctx.restore(); 
             }
         }
 
         class Rocket {
-            constructor() { this.x = groundSAM.x; this.y = groundSAM.y; this.v = 5*s; this.angle = groundSAM.angle; this.life = 180; this.target = null; }
+            constructor() { this.x = groundSAM.x; this.y = groundSAM.y; this.v = 5*s; this.angle = groundSAM.angle; this.life = 180; }
             update() {
                 if(isPaused || isGameOver || briefingActive) return;
-                let mD = Infinity; enemies.forEach(e => { if(e.type==='boss') return; let d = Math.hypot(this.x-e.x, this.y-e.y); if(d < mD) { mD = d; this.target = e; } });
-                if(this.target) {
-                    let diff = Math.atan2(this.target.y-this.y, this.target.x-this.x)-this.angle;
+                let mD = Infinity; let target = null; enemies.forEach(e => { let d = Math.hypot(this.x-e.x, this.y-e.y); if(d < mD) { mD = d; target = e; } });
+                if(target) {
+                    let diff = Math.atan2(target.y-this.y, target.x-this.x)-this.angle;
                     while(diff < -Math.PI) diff += Math.PI * 2; while(diff > Math.PI) diff -= Math.PI * 2;
                     this.angle += diff * 0.15; this.v += 0.12*s;
                 }
                 this.x += Math.cos(this.angle)*this.v; this.y += Math.sin(this.angle)*this.v; this.life--;
                 particles.push(new Particle(this.x, this.y, '#ff9f43', 'fire'));
-                if(this.life % 2 === 0) particles.push(new Particle(this.x, this.y, 'rgba(255,255,255,0.7)', 'smoke'));
             }
-            draw() { ctx.save(); ctx.translate(this.x, this.y); ctx.rotate(this.angle); ctx.fillStyle = '#2d3436'; ctx.fillRect(-11*s, -4*s, 22*s, 7*s); ctx.fillStyle = '#e74c3c'; ctx.beginPath(); ctx.moveTo(11*s, -4*s); ctx.lineTo(18*s, 0); ctx.lineTo(11*s, 4*s); ctx.fill(); ctx.restore(); }
+            draw() { ctx.save(); ctx.translate(this.x, this.y); ctx.rotate(this.angle); ctx.fillStyle = '#2d3436'; ctx.fillRect(-11*s, -4*s, 22*s, 7*s); ctx.restore(); }
         }
 
         function drawSAMStation() {
             if(!groundSAM) return; groundSAM.radarAngle += 0.12;
-            let t = null; let mD = 850*s; enemies.forEach(e => { let d = Math.hypot(groundSAM.x-e.x, groundSAM.y-e.y); if(d < mD) { mD = d; t = e; } });
-            if(t && !isPaused && !isGameOver && !briefingActive) {
-                let diff = Math.atan2(t.y-groundSAM.y, t.x-groundSAM.x) - groundSAM.angle;
-                while(diff < -Math.PI) diff += Math.PI * 2; while(diff > Math.PI) diff -= Math.PI * 2;
-                groundSAM.angle += diff * 0.05;
-            }
-            ctx.save(); ctx.translate(groundSAM.x, groundSAM.y); ctx.fillStyle = '#2c3e50'; ctx.fillRect(-40*s,-40*s,80*s,80*s); ctx.fillStyle='#34495e'; ctx.fillRect(-50*s,15*s,20*s,20*s); ctx.fillRect(30*s,15*s,20*s,20*s); ctx.fillRect(-50*s,-35*s,20*s,20*s); ctx.fillRect(30*s,-35*s,20*s,20*s);
-            ctx.rotate(groundSAM.angle); ctx.fillStyle='#2d3436'; ctx.fillRect(-22*s,-28*s,50*s,56*s); ctx.fillStyle='#1e272e'; ctx.fillRect(12*s,-22*s,17*s,14*s); ctx.fillRect(12*s,8*s,17*s,14*s);
-            ctx.save(); ctx.translate(-18*s,0); ctx.rotate(groundSAM.radarAngle); ctx.strokeStyle='#95a5a6'; ctx.lineWidth=3*s; ctx.beginPath(); ctx.arc(0,0,14*s,0,Math.PI); ctx.stroke(); ctx.restore(); ctx.restore();
+            ctx.save(); ctx.translate(groundSAM.x, groundSAM.y); ctx.fillStyle = '#2c3e50'; ctx.fillRect(-40*s,-40*s,80*s,80*s);
+            ctx.rotate(groundSAM.angle); ctx.fillStyle='#2d3436'; ctx.fillRect(-22*s,-28*s,50*s,56*s); ctx.restore();
         }
 
         function drawPlayer() {
@@ -596,92 +555,73 @@
                 let diff = player.targetAngle - player.angle; while(diff < -Math.PI) diff += Math.PI*2; while(diff > Math.PI) diff -= Math.PI*2;
                 if(Math.abs(diff) > 0.01) player.angle += Math.sign(diff) * Math.min(Math.abs(diff), player.turnSpeed);
             }
-            const barW = 120*s; const barH = 12*s; ctx.fillStyle = 'rgba(0,0,0,0.3)'; ctx.fillRect(player.x - barW/2, player.y - 95*s, barW, barH);
-            const hpP = Math.max(0, lives / maxLives); ctx.fillStyle = hpP > 0.5 ? '#2ecc71' : (hpP > 0.25 ? '#f1c40f' : '#e74c3c');
-            ctx.fillRect(player.x - barW/2, player.y - 95*s, barW * hpP, barH);
-            ctx.save(); ctx.beginPath(); ctx.moveTo(player.x, player.y); ctx.lineTo(player.x + Math.cos(player.angle)*1500*s, player.y + Math.sin(player.angle)*1500*s); ctx.strokeStyle = 'rgba(255, 0, 0, 0.25)'; ctx.lineWidth = 1.5*s; ctx.stroke(); ctx.restore();
-            ctx.save(); ctx.translate(player.x, player.y); ctx.fillStyle = '#34495e'; ctx.beginPath(); ctx.moveTo(-50*s, 50*s); ctx.lineTo(50*s, 50*s); ctx.lineTo(60*s, 22*s); ctx.lineTo(60*s, -22*s); ctx.lineTo(50*s, -50*s); ctx.lineTo(-50*s, -50*s); ctx.lineTo(-60*s, -22*s); ctx.lineTo(-60*s, 22*s); ctx.fill();
-            ctx.fillStyle = '#e74c3c'; ctx.fillRect(-35*s, 38*s, 70*s, 6*s); ctx.fillRect(-35*s, -44*s, 70*s, 6*s); ctx.rotate(player.angle);
-            ctx.fillStyle = '#4a69bd'; ctx.beginPath(); ctx.moveTo(-32*s,-28*s); ctx.lineTo(22*s,-28*s); ctx.lineTo(38*s,-11*s); ctx.lineTo(38*s,11*s); ctx.lineTo(22*s,28*s); ctx.lineTo(-32*s,28*s); ctx.fill(); ctx.strokeStyle = '#2c3e50'; ctx.lineWidth = 3*s; ctx.beginPath(); ctx.moveTo(0, -28*s); ctx.lineTo(0, 28*s); ctx.stroke();
-            ctx.fillStyle = '#2c3e50'; ctx.fillRect((32-player.recoil)*s, -9*s, 65*s, 18*s); for(let i=0; i<5; i++) { ctx.fillStyle = '#7f8c8d'; ctx.fillRect((42+i*11-player.recoil)*s, -10*s, 5*s, 20*s); }
-            ctx.fillStyle = '#2c3e50'; ctx.fillRect((95-player.recoil)*s, -13*s, 17*s, 26*s); ctx.fillStyle = '#e74c3c'; ctx.fillRect((105-player.recoil)*s, -7*s, 6*s, 14*s); ctx.beginPath(); ctx.arc(0,0,20*s,0,Math.PI*2); ctx.fillStyle='#34495e'; ctx.fill(); ctx.fillStyle='#e74c3c'; ctx.fillRect(-11*s, -5*s, 22*s, 11*s); ctx.restore();
+            const hpP = Math.max(0, lives / maxLives); ctx.fillStyle = 'rgba(0,0,0,0.3)'; ctx.fillRect(player.x - 60*s, player.y - 95*s, 120*s, 12*s);
+            ctx.fillStyle = hpP > 0.5 ? '#2ecc71' : '#e74c3c'; ctx.fillRect(player.x - 60*s, player.y - 95*s, 120*s * hpP, 12*s);
+            ctx.save(); ctx.translate(player.x, player.y); ctx.fillStyle = '#34495e'; ctx.beginPath(); ctx.arc(0,0,50*s,0,Math.PI*2); ctx.fill();
+            ctx.rotate(player.angle); ctx.fillStyle = '#2c3e50'; ctx.fillRect((32-player.recoil)*s, -9*s, 65*s, 18*s); ctx.restore();
         }
 
-        function drawBtn(x, y, r, act, col, ico) { ctx.save(); if(act) ctx.translate(0, 6*s); ctx.beginPath(); ctx.arc(x, y, r, 0, Math.PI*2); ctx.fillStyle = col; ctx.fill(); ctx.strokeStyle='white'; ctx.lineWidth=5*s; ctx.stroke(); ctx.fillStyle = 'white'; ctx.font = `${r*0.8}px serif`; ctx.textAlign='center'; ctx.textBaseline='middle'; ctx.fillText(ico, x, y); ctx.restore(); }
+        function drawBtn(x, y, r, act, col, ico) { ctx.save(); if(act) ctx.translate(0, 6*s); ctx.beginPath(); ctx.arc(x, y, r, 0, Math.PI*2); ctx.fillStyle = col; ctx.fill(); ctx.fillStyle = 'white'; ctx.font = `${r*0.8}px serif`; ctx.textAlign='center'; ctx.textBaseline='middle'; ctx.fillText(ico, x, y); ctx.restore(); }
 
         function animate() {
             if(!isRunning) return; requestAnimationFrame(animate);
-            if (currentLevel === 3) ctx.fillStyle = '#f7d794'; else if (currentLevel === 2) ctx.fillStyle = '#131a21'; else ctx.fillStyle = '#FFFFFF';
+            ctx.fillStyle = (currentLevel === 3) ? '#f7d794' : (currentLevel === 2 ? '#131a21' : '#FFFFFF');
             ctx.fillRect(0,0,canvas.width,canvas.height);
-            iceBlocks.forEach(ib => { ctx.save(); ctx.translate(ib.x, ib.y); ctx.scale(ib.s*s*1.2, ib.s*s*1.2); if(ib.type === 'rock') { ctx.fillStyle = '#7f8c8d'; ctx.beginPath(); ctx.moveTo(-20, -15); ctx.lineTo(15, -20); ctx.lineTo(25, 5); ctx.lineTo(0, 20); ctx.lineTo(-25, 10); ctx.closePath(); ctx.fill(); } else { ctx.fillStyle = '#D1EAF5'; ctx.beginPath(); ctx.moveTo(0, -30); ctx.lineTo(25, -10); ctx.lineTo(20, 20); ctx.lineTo(-20, 25); ctx.lineTo(-25, 0); ctx.closePath(); ctx.fill(); } ctx.restore(); });
-            trees.forEach(t => { ctx.save(); ctx.translate(t.x, t.y); let scaleMult = t.type === 'cactus' ? 1.35 : 1.2; ctx.scale(t.s*s*scaleMult, t.s*s*scaleMult); if(t.type === 'cactus') { ctx.fillStyle = '#27ae60'; ctx.beginPath(); ctx.roundRect(-12, -60, 24, 70, 12); ctx.fill(); ctx.fillStyle = '#2ecc71'; ctx.fillRect(-4, -58, 8, 68); ctx.fillStyle = '#27ae60'; ctx.beginPath(); ctx.roundRect(-35, -40, 25, 12, 6); ctx.fill(); ctx.beginPath(); ctx.roundRect(-35, -55, 12, 20, 6); ctx.fill(); ctx.beginPath(); ctx.roundRect(10, -25, 25, 12, 6); ctx.fill(); ctx.beginPath(); ctx.roundRect(23, -40, 12, 20, 6); ctx.fill(); } else { ctx.fillStyle = '#5D4037'; ctx.fillRect(-4, 0, 8, 15); ctx.fillStyle = '#1B5E20'; ctx.beginPath(); ctx.moveTo(-35, 5); ctx.lineTo(35, 5); ctx.lineTo(0, -25); ctx.moveTo(-30, -15); ctx.lineTo(30, -15); ctx.lineTo(0, -45); ctx.moveTo(-20, -35); ctx.lineTo(20, -35); ctx.lineTo(0, -65); ctx.fill(); } ctx.restore(); });
+            iceBlocks.forEach(ib => { ctx.save(); ctx.translate(ib.x, ib.y); ctx.scale(ib.s*s*1.2, ib.s*s*1.2); ctx.fillStyle = ib.type === 'rock' ? '#7f8c8d' : '#D1EAF5'; ctx.beginPath(); ctx.arc(0,0,20,0,Math.PI*2); ctx.fill(); ctx.restore(); });
+            trees.forEach(t => { ctx.save(); ctx.translate(t.x, t.y); ctx.scale(t.s*s*1.2, t.s*s*1.2); ctx.fillStyle = t.type === 'cactus' ? '#27ae60' : '#1B5E20'; ctx.fillRect(-10, -30, 20, 30); ctx.restore(); });
             if(currentLevel !== 3) snowflakes.forEach(f => { ctx.beginPath(); ctx.arc(f.x, f.y, f.r, 0, Math.PI*2); ctx.fillStyle='#E3F2FD'; ctx.fill(); if(!isPaused && !briefingActive) f.y += f.v; if(f.y > canvas.height) f.y = -10; });
-            if(!isPaused && !isGameOver && !briefingActive) { if (timeLeft > 0) { if(kills % 15 === 0 && kills > 0 && enemies.filter(e=>e.type==='boss').length === 0) enemies.push(new Enemy('boss')); let spawnRate = (currentLevel === 2) ? 0.025 : (currentLevel === 3 ? 0.028 : 0.02); if(Math.random() < spawnRate) enemies.push(new Enemy('drone')); levelClearedTime = 0; } else { if (enemies.length === 0 && !victoryTriggered) { if (levelClearedTime === 0) levelClearedTime = Date.now(); if (Date.now() - levelClearedTime > 2000) { if (currentLevel === 1) initLevel2(); else if (currentLevel === 2) initLevel3(); else triggerVictory(); } } } }
+            if(!isPaused && !isGameOver && !briefingActive) { if (timeLeft > 0) { if(kills % 15 === 0 && kills > 0 && enemies.filter(e=>e.type==='boss').length === 0) enemies.push(new Enemy('boss')); let spawnRate = (currentLevel === 2) ? 0.025 : (currentLevel === 3 ? 0.028 : 0.02); if(Math.random() < spawnRate) enemies.push(new Enemy('drone')); } else { if (enemies.length === 0 && !victoryTriggered) { if (levelClearedTime === 0) levelClearedTime = Date.now(); if (Date.now() - levelClearedTime > 2000) { if (currentLevel === 1) initLevel2(); else if (currentLevel === 2) initLevel3(); else triggerVictory(); } } } }
             drawSAMStation(); drawPlayer(); 
-            if(!isPaused && !isGameOver && !briefingActive) { if(touch.btnFire.active && Date.now() - lastShotTime > 180) { const barrelLen = 115 * s; const px = player.x + Math.cos(player.angle) * barrelLen; const py = player.y + Math.sin(player.angle) * barrelLen; projectiles.push({ x: px, y: py, v: {x: Math.cos(player.angle)*25*s, y: Math.sin(player.angle)*25*s}, power: 1.2 }); player.recoil = 18; lastShotTime = Date.now(); playSound('shoot'); }
+            if(!isPaused && !isGameOver && !briefingActive) { if(touch.btnFire.active && Date.now() - lastShotTime > 180) { projectiles.push({ x: player.x, y: player.y, v: {x: Math.cos(player.angle)*25*s, y: Math.sin(player.angle)*25*s}, power: 1.2 }); player.recoil = 18; lastShotTime = Date.now(); playSound('shoot'); }
                 if(player.recoil > 0) player.recoil -= 2;
-                projectiles.forEach((p, i) => { p.x += p.v.x; p.y += p.v.y; ctx.fillStyle = '#FFD54F'; ctx.beginPath(); ctx.arc(p.x, p.y, 6*s, 0, Math.PI*2); ctx.fill(); enemies.forEach((e, ei) => { if (Math.hypot(p.x - e.x, p.y - e.y) < e.r + 5*s) { if (p.isSecondary) { if (e.type === 'boss') e.hp -= 0.1; else e.hp = 0; } else { e.hp -= (p.power || 1); } if(e.hp <= 0) { createExplosion(e.x, e.y, e.type==='boss'?3.5:1); enemies.splice(ei, 1); kills++; } projectiles.splice(i, 1); } }); if(p.x < 0 || p.x > canvas.width || p.y < 0 || p.y > canvas.height) projectiles.splice(i, 1); }); }
-            turrets.forEach((t, i) => { t.update(); t.draw(); if(t.life <= 0) { createExplosion(t.x, t.y); turrets.splice(i, 1); } }); rockets.forEach((r, i) => { r.update(); r.draw(); enemies.forEach((e, ei) => { if(e.type !== 'boss' && Math.hypot(r.x-e.x, r.y-e.y) < e.r+10*s) { createExplosion(e.x, e.y); enemies.splice(ei, 1); rockets.splice(i, 1); kills++; } }); }); enemies.forEach((e, i) => { e.update(); e.draw(); if(!isGameOver && !victoryTriggered && Math.hypot(player.x - e.x, player.y - e.y) < player.radius*s) { createExplosion(e.x, e.y); lives -= e.type==='boss'?2:1; enemies.splice(i, 1); if(lives <= 0) triggerGameOver(); } }); particles.forEach((p, i) => { p.update(); p.draw(); if(p.alpha <= 0) particles.splice(i, 1); });
-            if(!isGameOver) { let jX = touch.joy.x, jY = touch.joy.y; if(touch.joy.active && !isPaused && !briefingActive) { const dx = touch.joy.curX-touch.joy.startX, dy = touch.joy.curY-touch.joy.startY; const d = Math.min(Math.hypot(dx, dy), touch.joy.r); player.targetAngle = Math.atan2(dy, dx); jX += Math.cos(player.targetAngle)*d; jY += Math.sin(player.targetAngle)*d; } else if(!isPaused && !briefingActive) { jX += Math.cos(player.targetAngle) * (touch.joy.r * 0.5); jY += Math.sin(player.targetAngle) * (touch.joy.r * 0.5); }
-                ctx.beginPath(); ctx.arc(touch.joy.x, touch.joy.y, touch.joy.r, 0, Math.PI*2); ctx.fillStyle = 'rgba(0,0,0,0.05)'; ctx.fill(); ctx.beginPath(); ctx.arc(jX, jY, 45*s, 0, Math.PI*2); ctx.fillStyle = '#2d3436'; ctx.fill(); drawBtn(touch.btnFire.x, touch.btnFire.y, touch.btnFire.r, touch.btnFire.active, '#ff6b81', '🎯');
-                let uCol = (ultCharges > 0) ? ((Date.now()-lastUltTime>5000) ? '#f1c40f' : '#95a5a6') : '#2ecc71'; let uIcon = (ultCharges > 0) ? '☢️' : '📺'; drawBtn(touch.btnUlt.x, touch.btnUlt.y, touch.btnUlt.r, touch.btnUlt.active, uCol, uIcon); ctx.fillStyle = uCol; ctx.font = `bold ${25*s}px sans-serif`; ctx.textAlign = 'center'; ctx.fillText(ultCharges, touch.btnUlt.x, touch.btnUlt.y - touch.btnUlt.r - 15*s); drawBtn(touch.btnPause.x, touch.btnPause.y, touch.btnPause.r, false, '#34495e', isPaused ? '▶️' : '⏸️'); }
-            
-            let t = translations[currentLang]; 
-            let timeStr = ""; 
-            if (timeLeft > 0) { 
-                const mins = Math.floor(timeLeft / 60); const secs = timeLeft % 60; 
-                timeStr = (mins < 10 ? '0' : '') + mins + ':' + (secs < 10 ? '0' : '') + secs; 
-                ctx.fillStyle = (currentLevel === 3) ? '#2d3436' : (currentLevel === 2 ? '#ecf0f1' : '#2d3436'); 
-            } else { 
-                timeStr = t.clean; 
-                ctx.fillStyle = '#ff4757'; 
-            }
-            ctx.font = `bold ${32*s}px monospace`; ctx.textAlign='center'; ctx.fillText(timeStr, canvas.width/2, 60*s); 
-            ctx.font = `bold ${20*s}px monospace`; ctx.fillText("LVL " + currentLevel, canvas.width/2, 90*s);
-            
-            // --- ЛОГИКА СКРЫТИЯ КУРСОРА ВО ВРЕМЯ ИГРЫ ---
-            if (!isPaused && !isGameOver && !briefingActive) {
-                // Если идет игра и нет меню - скрываем курсор
-                canvas.style.cursor = 'none';
-            } else {
-                // В меню и паузе показываем
-                canvas.style.cursor = 'default';
-                
-                // Отрисовка паузы
-                if(isPaused) { 
-                    ctx.fillStyle = 'rgba(0,0,0,0.5)'; ctx.fillRect(0,0,canvas.width,canvas.height); 
-                    ctx.fillStyle = 'white'; ctx.font = `bold ${60*s}px sans-serif`; ctx.textAlign='center'; 
-                    ctx.fillText(t.pause, canvas.width/2, canvas.height/2); 
+                projectiles.forEach((p, i) => { p.x += p.v.x; p.y += p.v.y; ctx.fillStyle = '#FFD54F'; ctx.beginPath(); ctx.arc(p.x, p.y, 6*s, 0, Math.PI*2); ctx.fill(); enemies.forEach((e, ei) => { if (Math.hypot(p.x - e.x, p.y - e.y) < e.r + 5*s) { e.hp -= (p.power || 1); if(e.hp <= 0) { createExplosion(e.x, e.y, e.type==='boss'?3.5:1); enemies.splice(ei, 1); kills++; } projectiles.splice(i, 1); } }); if(p.x < 0 || p.x > canvas.width || p.y < 0 || p.y > canvas.height) projectiles.splice(i, 1); }); }
+            turrets.forEach((t, i) => { t.update(); t.draw(); if(t.life <= 0) { createExplosion(t.x, t.y); turrets.splice(i, 1); } });
+            rockets.forEach((r, i) => { r.update(); r.draw(); enemies.forEach((e, ei) => { if(Math.hypot(r.x-e.x, r.y-e.y) < e.r+10*s) { createExplosion(e.x, e.y); enemies.splice(ei, 1); rockets.splice(i, 1); kills++; } }); });
+            enemies.forEach((e, i) => { e.update(); e.draw(); if(!isGameOver && !victoryTriggered && Math.hypot(player.x - e.x, player.y - e.y) < player.radius*s) { createExplosion(e.x, e.y); lives -= e.type==='boss'?2:1; enemies.splice(i, 1); if(lives <= 0) triggerGameOver(); } });
+            particles.forEach((p, i) => { p.update(); p.draw(); if(p.alpha <= 0) particles.splice(i, 1); });
+            if(!isGameOver) { 
+                let jX = touch.joy.x, jY = touch.joy.y; 
+                if(touch.joy.active && !isPaused && !briefingActive) {
+                    const dx = touch.joy.curX-touch.joy.startX, dy = touch.joy.curY-touch.joy.startY;
+                    const d = Math.min(Math.hypot(dx, dy), touch.joy.r); player.targetAngle = Math.atan2(dy, dx); jX += Math.cos(player.targetAngle)*d; jY += Math.sin(player.targetAngle)*d;
                 }
+                ctx.beginPath(); ctx.arc(touch.joy.x, touch.joy.y, touch.joy.r, 0, Math.PI*2); ctx.fillStyle = 'rgba(0,0,0,0.05)'; ctx.fill();
+                ctx.beginPath(); ctx.arc(jX, jY, 45*s, 0, Math.PI*2); ctx.fillStyle = '#2d3436'; ctx.fill();
+                drawBtn(touch.btnFire.x, touch.btnFire.y, touch.btnFire.r, touch.btnFire.active, '#ff6b81', '🎯');
+                let uCol = (ultCharges > 0) ? ((Date.now()-lastUltTime>5000) ? '#f1c40f' : '#95a5a6') : '#2ecc71'; 
+                drawBtn(touch.btnUlt.x, touch.btnUlt.y, touch.btnUlt.r, touch.btnUlt.active, uCol, ultCharges > 0 ? '☢️' : '📺');
+                ctx.fillStyle = uCol; ctx.font = `bold ${25*s}px sans-serif`; ctx.textAlign = 'center'; ctx.fillText(ultCharges, touch.btnUlt.x, touch.btnUlt.y - touch.btnUlt.r - 15*s);
+                drawBtn(touch.btnPause.x, touch.btnPause.y, touch.btnPause.r, false, '#34495e', isPaused ? '▶️' : '⏸️'); 
             }
-            // ---------------------------------------------
-
+            let t = translations[currentLang]; 
+            let timeStr = timeLeft > 0 ? (Math.floor(timeLeft/60)+":"+(timeLeft%60<10?'0':'')+timeLeft%60) : t.clean;
+            ctx.fillStyle = timeLeft > 0 ? '#2d3436' : '#ff4757'; ctx.font = `bold ${32*s}px monospace`; ctx.textAlign='center'; ctx.fillText(timeStr, canvas.width/2, 60*s); 
+            if (isPaused) { ctx.fillStyle = 'rgba(0,0,0,0.5)'; ctx.fillRect(0,0,canvas.width,canvas.height); ctx.fillStyle = 'white'; ctx.font = `bold ${60*s}px sans-serif`; ctx.fillText(t.pause, canvas.width/2, canvas.height/2); }
             if(flashAlpha > 0) { ctx.fillStyle = `rgba(255, 255, 255, ${flashAlpha})`; ctx.fillRect(0, 0, canvas.width, canvas.height); flashAlpha -= 0.05; }
         }
 
         function startGame() { 
-            const docEl = document.documentElement; const requestFS = docEl.requestFullscreen || docEl.webkitRequestFullscreen || docEl.mozRequestFullScreen || docEl.msRequestFullscreen; if (requestFS) requestFS.call(docEl).catch(err => {});
-            if (screen.orientation && screen.orientation.lock) screen.orientation.lock('landscape').catch(err => {});
-            initAudio(); document.getElementById('start-screen').style.display='none'; canvas.style.display='block'; isRunning=true; briefingActive = true; document.getElementById('briefing-overlay').style.display='flex'; resize(); lastRocketTime = Date.now();
+            const docEl = document.documentElement; if (docEl.requestFullscreen) docEl.requestFullscreen().catch(()=>{});
+            initAudio(); document.getElementById('start-screen').style.display='none'; canvas.style.display='block'; isRunning=true; briefingActive = true; document.getElementById('briefing-overlay').style.display='flex'; resize();
             showFullscreenAd(); animate(); 
         }
 
         function startBattle() { 
             briefingActive = false; document.getElementById('briefing-overlay').style.display='none'; lastRocketTime = Date.now();
-            showFullscreenAd(); // Доп. проверка SDK при закрытии брифинга
+            showFullscreenAd();
         }
-        window.addEventListener('resize', resize);
-        
-        setInterval(() => { if(isRunning && !isPaused && !isGameOver && !briefingActive) { if(timeLeft > 0) timeLeft--; if(Date.now()-lastRocketTime > 2500 && enemies.length > 0) { rockets.push(new Rocket()); lastRocketTime = Date.now(); } if(Date.now()-lastTurretTime > 8000) { let tx, ty, foundSpot = false, attempts = 0; while(!foundSpot && attempts < 15) { tx = player.x + (Math.random()-0.5)*800*s; ty = player.y + (Math.random()-0.5)*800*s; let overlap = false; if(Math.hypot(tx - player.x, ty - player.y) < 250*s) overlap = true; if(Math.hypot(tx - groundSAM.x, ty - groundSAM.y) < 150*s) overlap = true; for(let t of trees) if(Math.hypot(tx - t.x, ty - t.y) < 90*s) overlap = true; for(let i of iceBlocks) if(Math.hypot(tx - i.x, ty - i.y) < 90*s) overlap = true; for(let tur of turrets) if(Math.hypot(tx - tur.x, ty - tur.y) < 100*s) overlap = true; if (tx < 350*s && ty > canvas.height - 350*s) overlap = true; if (tx > canvas.width - 350*s && ty > canvas.height - 350*s) overlap = true; if (Math.abs(tx - canvas.width/2) < 200*s && ty < 150*s) overlap = true; if(!overlap) foundSpot = true; attempts++; } if(foundSpot) { turrets.push(new Turret(tx, ty)); lastTurretTime = Date.now(); } } } }, 1000);
 
-        canvas.addEventListener('touchstart', e => { e.preventDefault(); if(briefingActive) return; for(let t of e.changedTouches) { if(isGameOver) return; if(Math.hypot(t.clientX - touch.btnPause.x, t.clientY - touch.btnPause.y) < touch.btnPause.r) { isPaused = !isPaused; return; } if(isPaused) { isPaused = false; return; } if(t.clientX < canvas.width/2) { touch.joy.active=true; touch.joy.id=t.identifier; touch.joy.startX=t.clientX; touch.joy.startY=t.clientY; touch.joy.curX=t.clientX; touch.joy.curY=t.clientY; } if(Math.hypot(t.clientX - touch.btnFire.x, t.clientY - touch.btnFire.y) < touch.btnFire.r) touch.btnFire.active = true; if(Math.hypot(t.clientX - touch.btnUlt.x, t.clientY - touch.btnUlt.y) < touch.btnUlt.r) { if (ultCharges > 0 && Date.now() - lastUltTime > 5000) { enemies.forEach(en => { createExplosion(en.x, en.y, en.type==='boss'?2.5:1); kills++; }); enemies.length = 0; lastUltTime=Date.now(); ultCharges--; flashAlpha = 0.35; } else if (ultCharges <= 0) { showRewardedAd(); } } } }, {passive: false});
+        window.addEventListener('resize', resize);
+        setInterval(() => { if(isRunning && !isPaused && !isGameOver && !briefingActive) { if(timeLeft > 0) timeLeft--; if(Date.now()-lastRocketTime > 2500 && enemies.length > 0) { rockets.push(new Rocket()); lastRocketTime = Date.now(); } if(Date.now()-lastTurretTime > 8000) { let tx = player.x + (Math.random()-0.5)*800*s, ty = player.y + (Math.random()-0.5)*800*s; turrets.push(new Turret(tx, ty)); lastTurretTime = Date.now(); } } }, 1000);
+
+        canvas.addEventListener('touchstart', e => { e.preventDefault(); if(briefingActive) return; for(let t of e.changedTouches) { if(Math.hypot(t.clientX - touch.btnPause.x, t.clientY - touch.btnPause.y) < touch.btnPause.r) { isPaused = !isPaused; return; } if(t.clientX < canvas.width/2) { touch.joy.active=true; touch.joy.id=t.identifier; touch.joy.startX=t.clientX; touch.joy.startY=t.clientY; touch.joy.curX=t.clientX; touch.joy.curY=t.clientY; } if(Math.hypot(t.clientX - touch.btnFire.x, t.clientY - touch.btnFire.y) < touch.btnFire.r) touch.btnFire.active = true; if(Math.hypot(t.clientX - touch.btnUlt.x, t.clientY - touch.btnUlt.y) < touch.btnUlt.r) { if (ultCharges > 0 && Date.now() - lastUltTime > 5000) { enemies.forEach(en => { createExplosion(en.x, en.y, en.type==='boss'?2.5:1); kills++; }); enemies.length = 0; lastUltTime=Date.now(); ultCharges--; flashAlpha = 0.35; } else if (ultCharges <= 0) { showRewardedAd(); } } } }, {passive: false});
         canvas.addEventListener('touchmove', e => { e.preventDefault(); for (let t of e.touches) if (t.identifier === touch.joy.id) { touch.joy.curX = t.clientX; touch.joy.curY = t.clientY; } }, {passive: false});
-        canvas.addEventListener('touchend', e => { for(let t of e.changedTouches) { if(t.identifier===touch.joy.id) touch.joy.active=false; if(Math.hypot(t.clientX - touch.btnFire.x, t.clientY - touch.btnFire.y) < touch.btnFire.r) touch.btnFire.active=false; } });
-        canvas.addEventListener('mousemove', e => { if (isGameOver || isPaused || briefingActive) return; const dx = e.clientX - player.x; const dy = e.clientY - player.y; player.targetAngle = Math.atan2(dy, dx); });
-        canvas.addEventListener('mousedown', e => { if (isGameOver || briefingActive) return; if (e.button === 0) touch.btnFire.active = true; if (e.button === 2) { if (ultCharges > 0 && Date.now() - lastUltTime > 5000) { enemies.forEach(en => { createExplosion(en.x, en.y, en.type==='boss'?2.5:1); kills++; }); enemies.length = 0; lastUltTime = Date.now(); ultCharges--; touch.btnUlt.active = true; setTimeout(() => touch.btnUlt.active = false, 200); flashAlpha = 0.35; } else if (ultCharges <= 0) { showRewardedAd(); } } });
+        canvas.addEventListener('touchend', e => { for(let t of e.changedTouches) if(t.identifier===touch.joy.id) touch.joy.active=false; if(Math.hypot(t.clientX-touch.btnFire.x, t.clientY-touch.btnFire.y)<touch.btnFire.r) touch.btnFire.active=false; });
+        canvas.addEventListener('mousemove', e => { const dx = e.clientX - player.x, dy = e.clientY - player.y; player.targetAngle = Math.atan2(dy, dx); });
+        canvas.addEventListener('mousedown', e => { if (e.button === 0) touch.btnFire.active = true; if (e.button === 2) { if (ultCharges > 0 && Date.now() - lastUltTime > 5000) { enemies.length = 0; lastUltTime = Date.now(); ultCharges--; flashAlpha = 0.35; } else if (ultCharges <= 0) { showRewardedAd(); } } });
         canvas.addEventListener('mouseup', e => { if (e.button === 0) touch.btnFire.active = false; });
-        canvas.addEventListener('contextmenu', e => e.preventDefault());
-        window.addEventListener('keydown', e => { if (e.code === 'KeyG') isPaused = !isPaused; });
     </script>
 </body>
+</html>
+
 </html>
