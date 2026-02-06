@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Mess 12.2 Stable</title>
+    <title>Mess 13.0 Ticks</title>
     <script src="https://unpkg.com/peerjs@1.5.2/dist/peerjs.min.js"></script>
     <style>
         :root {
@@ -21,7 +21,6 @@
         .screen { 
             padding: 20px; max-width: 600px; width: 100%; margin: 0 auto; 
             flex-grow: 1; display: flex; flex-direction: column; 
-            /* ВАЖНО: Скрываем экраны жестко */
             position: absolute; top: 0; left: 0; right: 0; bottom: 0; background: var(--bg-color); z-index: 1;
         }
         .card { background: rgba(255, 255, 255, 0.9); border-radius: 20px; padding: 25px; box-shadow: var(--shadow); text-align: center; margin-bottom: 20px; }
@@ -30,23 +29,38 @@
         .btn-main { width: 100%; padding: 16px; border: none; border-radius: 14px; background: var(--primary-grad); color: white; font-size: 16px; font-weight: 600; cursor: pointer; }
         .btn-small { padding: 8px 14px; border-radius: 15px; background: #E5E5EA; color: var(--primary); border: none; font-weight: 600; cursor: pointer; }
         
-        /* Исправление списков */
         .contact-list { list-style: none; padding: 0; margin: 10px 0; overflow-y: auto; max-height: 60vh; }
         .contact-item { background: #fff; padding: 14px; margin-bottom: 8px; border-radius: 16px; display: flex; justify-content: space-between; align-items: center; }
         .contact-avatar { width: 36px; height: 36px; background: var(--primary); border-radius: 50%; color: white; display: flex; align-items: center; justify-content: center; margin-right: 10px; }
 
         /* ЧАТ */
-        #chat-screen { z-index: 2; background: #EFEFF4; } /* Чат поверх всего */
+        #chat-screen { z-index: 2; background: #EFEFF4; } 
         .chat-header { padding: 10px 15px; background: rgba(255,255,255,0.95); border-bottom: 1px solid #ccc; z-index: 10; }
         .header-top { display: flex; align-items: center; justify-content: space-between; }
         .chat-title-box { display: flex; align-items: center; gap: 10px; }
         #chat-area { flex-grow: 1; padding: 15px; overflow-y: auto; display: flex; flex-direction: column; background: #E5E5EA; }
         
-        .message-row { display: flex; margin-bottom: 8px; width: 100%; }
+        .message-row { display: flex; margin-bottom: 4px; width: 100%; }
         .message-row.me { justify-content: flex-end; }
-        .bubble { max-width: 80%; padding: 10px 14px; font-size: 16px; border-radius: 16px; position: relative; word-wrap: break-word; }
+        
+        /* ПУЗЫРИ И ГАЛОЧКИ */
+        .bubble { 
+            max-width: 80%; padding: 8px 12px; font-size: 16px; border-radius: 16px; 
+            position: relative; word-wrap: break-word; display: flex; flex-direction: column;
+        }
         .bubble.me { background: var(--my-bubble); color: white; border-bottom-right-radius: 4px; }
         .bubble.friend { background: var(--friend-bubble); color: black; border-bottom-left-radius: 4px; }
+        
+        .msg-content { margin-bottom: 2px; }
+        
+        .msg-meta { 
+            display: flex; justify-content: flex-end; align-items: center; gap: 4px; 
+            font-size: 10px; margin-top: -2px; opacity: 0.7;
+        }
+        .ticks { font-size: 11px; font-weight: bold; letter-spacing: -1px; }
+        /* Синие галочки только для прочитанных */
+        .read-status { color: #50E3C2; } /* Светло-бирюзовый для галочек на синем фоне */
+        
         .chat-img { border-radius: 12px; max-width: 100%; margin-top: 5px; }
         
         .input-area { padding: 10px; background: #fff; border-top: 1px solid #ccc; display: flex; gap: 8px; align-items: center; }
@@ -83,7 +97,7 @@
     <div id="login-screen" class="screen">
         <div style="flex-grow: 1; display: flex; align-items: center; justify-content: center;">
             <div class="card">
-                <h2>Mess</h2>
+                <h2>Mess 13.0</h2>
                 <input type="text" id="my-name-input" placeholder="Ваше имя">
                 <input type="text" id="my-custom-id" placeholder="Ваш ID">
                 <button class="btn-main" onclick="initializePeer()">Войти</button>
@@ -200,9 +214,24 @@
         function setupConnection() {
             conn.on('open', ()=>setupUIForChat());
             conn.on('data', d => {
-                if(d.type==='voice') addVoice(d.data,'friend',d.name,true);
-                else if(d.type==='image') addImage(d.data,'friend',d.name,true);
-                else if(d.text && d.type!=='call-notify') addMsg(d.text,'friend',d.name,true);
+                // ОБРАБОТКА ВХОДЯЩИХ ДАННЫХ
+                if (d.type === 'read_receipt') {
+                    // ЕСЛИ ПРИШЕЛ ОТЧЕТ О ПРОЧТЕНИИ -> МЕНЯЕМ ГАЛОЧКИ
+                    markMessageAsRead(d.msgId);
+                    return;
+                }
+
+                const msgId = d.id || Date.now(); // Если ID нет, генерируем (хотя лучше чтобы был)
+                
+                // СРАЗУ ОТПРАВЛЯЕМ ОТЧЕТ "Я ПРОЧИТАЛ"
+                if (d.type !== 'call-notify' && d.type !== 'call-reject' && d.type !== 'call-end') {
+                    conn.send({ type: 'read_receipt', msgId: msgId });
+                }
+
+                if(d.type==='voice') addVoice(d.data,'friend',d.name,true, 'read', msgId);
+                else if(d.type==='image') addImage(d.data,'friend',d.name,true, 'read', msgId);
+                else if(d.text && d.type!=='call-notify') addMsg(d.text,'friend',d.name,true, 'read', msgId);
+                
                 if(d.type==='call-reject'||d.type==='call-end'){ closeCallUI(); showToast("Сброс"); }
                 document.getElementById('msgSound').play().catch(()=>{});
             });
@@ -218,34 +247,107 @@
         function backToContacts() { showScreen('connect-screen'); if(conn) conn.close(); }
         function logout() { localStorage.clear(); location.reload(); }
 
+        // === ОТПРАВКА СООБЩЕНИЙ С ID ===
         function sendMessage() {
             const inp = document.getElementById('msg-input'); const txt = inp.value.trim();
             if(!txt) return;
             const n = document.getElementById('my-name-input').value;
-            if(conn&&conn.open) conn.send({text:txt, name:n, type:'text'});
-            addMsg(txt,'me',n,true); inp.value=''; document.getElementById('emoji-picker').style.display='none';
+            const msgId = Date.now(); // Уникальный ID сообщения
+            
+            if(conn&&conn.open) conn.send({text:txt, name:n, type:'text', id: msgId});
+            
+            // Сначала статус 'sent' (одна галочка)
+            addMsg(txt,'me',n,true, 'sent', msgId); 
+            inp.value=''; document.getElementById('emoji-picker').style.display='none';
         }
 
-        function addMsg(t, type, n, s) { appendBubble(`<div class="bubble ${type}">${t}</div>`, type, s, {type:'text', text:t, sender:type, name:n}); }
-        function addVoice(d, type, n, s) { appendBubble(`<div class="bubble ${type}">▶️ <audio controls src="${d}"></audio></div>`, type, s, {type:'voice', data:d, sender:type, name:n}); }
-        function addImage(d, type, n, s) { appendBubble(`<div class="bubble ${type}"><img src="${d}" class="chat-img" onclick="window.open(this.src)"></div>`, type, s, {type:'image', data:d, sender:type, name:n}); }
+        // === ГЕНЕРАЦИЯ HTML ДЛЯ СООБЩЕНИЯ ===
+        function getTicksHtml(status) {
+            if (status === 'friend') return ''; // У друга галочки не показываем
+            const colorClass = status === 'read' ? 'read-status' : '';
+            const symbol = status === 'read' ? '✓✓' : '✓';
+            return `<span class="ticks ${colorClass}" id="ticks-${status}">${symbol}</span>`;
+        }
+
+        function addMsg(t, type, n, s, status='sent', msgId) { 
+            const html = `
+                <div class="msg-content">${t}</div>
+                <div class="msg-meta">
+                    ${type === 'me' ? `<span id="tick-${msgId}" class="ticks ${status === 'read' ? 'read-status' : ''}">${status === 'read' ? '✓✓' : '✓'}</span>` : ''}
+                </div>`;
+            appendBubble(html, type, s, {type:'text', text:t, sender:type, name:n, status: status, id: msgId}); 
+        }
+
+        function addVoice(d, type, n, s, status='sent', msgId) { 
+            const html = `
+                <div class="msg-content">▶️ <audio controls src="${d}"></audio></div>
+                <div class="msg-meta">
+                     ${type === 'me' ? `<span id="tick-${msgId}" class="ticks ${status === 'read' ? 'read-status' : ''}">${status === 'read' ? '✓✓' : '✓'}</span>` : ''}
+                </div>`;
+            appendBubble(html, type, s, {type:'voice', data:d, sender:type, name:n, status: status, id: msgId}); 
+        }
+
+        function addImage(d, type, n, s, status='sent', msgId) { 
+            const html = `
+                <img src="${d}" class="chat-img" onclick="window.open(this.src)">
+                <div class="msg-meta">
+                     ${type === 'me' ? `<span id="tick-${msgId}" class="ticks ${status === 'read' ? 'read-status' : ''}">${status === 'read' ? '✓✓' : '✓'}</span>` : ''}
+                </div>`;
+            appendBubble(html, type, s, {type:'image', data:d, sender:type, name:n, status: status, id: msgId}); 
+        }
         
         function appendBubble(html, type, save, msgObj) {
-            const div = document.createElement('div'); div.className=`message-row ${type}`; div.innerHTML=html;
+            const div = document.createElement('div'); div.className=`message-row ${type}`; 
+            // Внутренний HTML для пузыря
+            div.innerHTML = `<div class="bubble ${type}">${html}</div>`;
             document.getElementById('chat-area').append(div);
-            if(save) saveHist(currentFriendId, msgObj);
+            // Прокрутка вниз
+            const area = document.getElementById('chat-area');
+            area.scrollTop = area.scrollHeight;
+
+            if(save && msgObj) {
+                // Если ID нет (старые сообщения), генерим
+                if(!msgObj.id) msgObj.id = Date.now();
+                saveHist(currentFriendId, msgObj);
+            }
+        }
+
+        // === ОБНОВЛЕНИЕ ГАЛОЧЕК ===
+        function markMessageAsRead(msgId) {
+            // 1. Обновляем в интерфейсе
+            const tickElem = document.getElementById(`tick-${msgId}`);
+            if (tickElem) {
+                tickElem.innerHTML = '✓✓';
+                tickElem.classList.add('read-status');
+            }
+            // 2. Обновляем в истории (памяти)
+            updateHistoryStatus(currentFriendId, msgId, 'read');
+        }
+
+        function updateHistoryStatus(friendId, msgId, newStatus) {
+            let h = JSON.parse(localStorage.getItem('hist_'+friendId)||'[]');
+            const msgIndex = h.findIndex(m => m.id === msgId);
+            if (msgIndex !== -1) {
+                h[msgIndex].status = newStatus;
+                localStorage.setItem('hist_'+friendId, JSON.stringify(h));
+            }
         }
 
         function saveHist(id, obj) { 
             let h = JSON.parse(localStorage.getItem('hist_'+id)||'[]'); h.push(obj); localStorage.setItem('hist_'+id, JSON.stringify(h)); 
         }
+        
         function loadHistory(id) {
             document.getElementById('chat-area').innerHTML='';
             let h = JSON.parse(localStorage.getItem('hist_'+id)||'[]');
             h.forEach(m => {
-                if(m.type==='text') addMsg(m.text, m.sender, m.name, false);
-                else if(m.type==='voice') addVoice(m.data, m.sender, m.name, false);
-                else if(m.type==='image') addImage(m.data, m.sender, m.name, false);
+                // Если сообщение мое, загружаем статус, иначе просто friend
+                const status = m.sender === 'me' ? (m.status || 'read') : 'read'; 
+                const msgId = m.id || Date.now(); // Fallback для старых
+
+                if(m.type==='text') addMsg(m.text, m.sender, m.name, false, status, msgId);
+                else if(m.type==='voice') addVoice(m.data, m.sender, m.name, false, status, msgId);
+                else if(m.type==='image') addImage(m.data, m.sender, m.name, false, status, msgId);
             });
         }
         function clearHistory() { if(confirm('Удалить?')) { localStorage.removeItem('hist_'+currentFriendId); loadHistory(currentFriendId); } }
@@ -287,8 +389,12 @@
 
         function handleImageUpload(inp) {
             const f = inp.files[0]; if(!f) return;
-            const r = new FileReader(); r.onload=e=>{ 
-                const d=e.target.result; if(conn) conn.send({type:'image', name:'Me', data:d}); addImage(d,'me','Me',true); 
+            const r = new FileReader(); 
+            const msgId = Date.now();
+            r.onload=e=>{ 
+                const d=e.target.result; 
+                if(conn) conn.send({type:'image', name:'Me', data:d, id: msgId}); 
+                addImage(d,'me','Me',true, 'sent', msgId); 
             }; r.readAsDataURL(f); inp.value='';
         }
         async function toggleRecording() {
@@ -299,7 +405,11 @@
                 mediaRecorder.ondataavailable=e=>audioChunks.push(e.data);
                 mediaRecorder.onstop=()=>{
                     const bl=new Blob(audioChunks,{type:'audio/webm'}); const r=new FileReader(); r.readAsDataURL(bl);
-                    r.onloadend=()=>{ if(conn) conn.send({type:'voice',name:'Me',data:r.result}); addVoice(r.result,'me','Me',true); };
+                    const msgId = Date.now();
+                    r.onloadend=()=>{ 
+                        if(conn) conn.send({type:'voice',name:'Me',data:r.result, id: msgId}); 
+                        addVoice(r.result,'me','Me',true, 'sent', msgId); 
+                    };
                 }; mediaRecorder.start(); b.style.color='red'; } catch(e){ showToast("Микрофон?"); }
             } else { mediaRecorder.stop(); b.style.color='black'; }
         }
