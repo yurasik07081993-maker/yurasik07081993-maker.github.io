@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>P2P Chat 8.0 Photos</title>
+    <title>P2P Chat 11.0 History</title>
     <script src="https://unpkg.com/peerjs@1.5.2/dist/peerjs.min.js"></script>
     <style>
         :root {
@@ -26,6 +26,7 @@
             display: flex;
             flex-direction: column;
             color: var(--text-dark);
+            overflow: hidden;
         }
 
         .screen { padding: 20px; max-width: 500px; width: 100%; margin: 0 auto; flex-grow: 1; display: flex; flex-direction: column; justify-content: center; }
@@ -55,21 +56,18 @@
 
         .btn-small { padding: 8px 15px; border-radius: 10px; background: #edf2f7; color: #4a5568; border: none; font-size: 13px; font-weight: 600; cursor: pointer; }
         
-        .contact-list { list-style: none; padding: 0; margin: 10px 0; text-align: left; max-height: 150px; overflow-y: auto; }
-        .contact-item { 
-            background: #fff; padding: 12px; margin-bottom: 8px; border-radius: 12px; 
-            display: flex; justify-content: space-between; align-items: center; border: 1px solid #edf2f7; cursor: pointer;
-        }
+        #wake-btn { display: none; width: 100%; padding: 12px; border: none; border-radius: 16px; background: linear-gradient(135deg, #f6d365 0%, #fda085 100%); color: white; font-size: 14px; font-weight: bold; cursor: pointer; margin-top: 10px; animation: bounce 2s infinite; }
+        @keyframes bounce { 0%, 20%, 50%, 80%, 100% {transform: translateY(0);} 40% {transform: translateY(-5px);} 60% {transform: translateY(-3px);} }
+
+        .contact-list { list-style: none; padding: 0; margin: 10px 0; text-align: left; max-height: 200px; overflow-y: auto; }
+        .contact-item { background: #fff; padding: 12px; margin-bottom: 8px; border-radius: 12px; display: flex; justify-content: space-between; align-items: center; border: 1px solid #edf2f7; cursor: pointer; }
         .contact-name { font-weight: bold; color: #4a5568; font-size: 14px; }
         .contact-id { font-size: 11px; color: #a0aec0; }
         .delete-contact { color: #e53e3e; font-size: 18px; padding: 0 10px; cursor: pointer; }
 
         #chat-screen { display: none; flex-direction: column; height: 100%; background: transparent; }
         
-        .chat-header { 
-            padding: 10px 15px; background: rgba(255,255,255,0.95); border-bottom: 1px solid #edf2f7; 
-            display: flex; flex-direction: column; gap: 8px; box-shadow: 0 2px 5px rgba(0,0,0,0.05); 
-        }
+        .chat-header { padding: 10px 15px; background: rgba(255,255,255,0.95); border-bottom: 1px solid #edf2f7; display: flex; flex-direction: column; gap: 8px; box-shadow: 0 2px 5px rgba(0,0,0,0.05); }
         .header-top { display: flex; align-items: center; justify-content: space-between; width: 100%; }
         .volume-control { display: flex; align-items: center; gap: 8px; font-size: 12px; color: #718096; background: #f7fafc; padding: 5px 10px; border-radius: 15px; width: fit-content; align-self: center; }
         input[type=range] { width: 80px; accent-color: #764ba2; }
@@ -78,12 +76,10 @@
         
         .message-row { display: flex; margin-bottom: 15px; width: 100%; }
         .message-row.me { justify-content: flex-end; }
-        
         .bubble { max-width: 85%; padding: 12px 16px; border-radius: 18px; font-size: 15px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); position: relative; word-wrap: break-word;}
         .bubble.me { background: var(--primary-gradient); color: white; border-bottom-right-radius: 4px; }
         .bubble.friend { background: white; color: var(--text-dark); border-bottom-left-radius: 4px; }
         
-        /* Стили для контента */
         audio { height: 35px; width: 200px; margin-top: 5px; outline: none; }
         .bubble.me audio { filter: invert(1); }
         .chat-img { max-width: 100%; border-radius: 10px; margin-top: 5px; display: block; }
@@ -91,28 +87,53 @@
         .input-area { padding: 15px; background: white; border-top: 1px solid #edf2f7; display: flex; gap: 8px; align-items: center; box-shadow: 0 -2px 10px rgba(0,0,0,0.05); }
         #msg-input { flex-grow: 1; background: #f4f6f9; border: none; border-radius: 25px; padding: 12px 20px; }
         
-        /* КНОПКИ */
-        .icon-btn { 
-            width: 40px; height: 40px; border-radius: 50%; border: none; cursor: pointer; flex-shrink: 0;
-            background: #edf2f7; color: #4a5568; font-size: 18px; display: flex; justify-content: center; align-items: center; transition: 0.2s;
-        }
+        .icon-btn { width: 40px; height: 40px; border-radius: 50%; border: none; cursor: pointer; flex-shrink: 0; background: #edf2f7; color: #4a5568; font-size: 18px; display: flex; justify-content: center; align-items: center; transition: 0.2s; }
         .icon-btn:active { transform: scale(0.9); }
-        
         .send-btn { background: var(--primary-gradient); color: white; width: 45px; height: 45px; font-size: 20px; }
-        
         #mic-btn.recording { background: #e53e3e; color: white; animation: pulse 1.5s infinite; }
         @keyframes pulse { 0% { transform: scale(1); } 50% { transform: scale(1.1); } 100% { transform: scale(1); } }
 
+        /* ЗВОНКИ */
+        #call-overlay {
+            display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background: linear-gradient(135deg, #2d3436 0%, #000000 100%);
+            z-index: 999; flex-direction: column; align-items: center; justify-content: center; color: white;
+        }
+        .call-avatar { width: 120px; height: 120px; background: #555; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 40px; margin-bottom: 20px; border: 3px solid white; }
+        .call-status { font-size: 18px; margin-bottom: 10px; color: #bbb; }
+        .call-name { font-size: 32px; font-weight: bold; margin-bottom: 50px; }
+        .call-controls { display: flex; gap: 40px; }
+        .call-btn { width: 70px; height: 70px; border-radius: 50%; border: none; font-size: 30px; cursor: pointer; display: flex; align-items: center; justify-content: center; }
+        .btn-answer { background: #2ecc71; color: white; animation: pulse 1s infinite; }
+        .btn-reject { background: #e74c3c; color: white; }
+        .phone-btn { background: #48bb78; color: white; }
+
         .toast { position: fixed; top: 20px; left: 50%; transform: translateX(-50%); background: #2d3748; color: white; padding: 10px 20px; border-radius: 30px; font-size: 14px; opacity: 0; transition: opacity 0.3s; pointer-events: none; z-index: 100; }
         .toast.show { opacity: 1; }
+        
+        /* КНОПКА УДАЛЕНИЯ ИСТОРИИ */
+        .trash-btn { color: #e53e3e; background: #fff5f5; }
     </style>
 </head>
 <body>
-
     <div id="toast" class="toast">Уведомление</div>
     <audio id="msgSound" src="https://assets.mixkit.co/active_storage/sfx/2869/2869-preview.mp3" preload="auto"></audio>
-    
+    <audio id="ringtone" src="https://assets.mixkit.co/active_storage/sfx/2865/2865-preview.mp3" loop></audio>
+    <audio id="remote-audio" autoplay></audio>
     <input type="file" id="image-input" accept="image/*" style="display: none;" onchange="handleImageUpload(this)">
+
+    <div id="call-overlay">
+        <div class="call-avatar">👤</div>
+        <div id="call-status" class="call-status">Входящий звонок...</div>
+        <div id="call-name" class="call-name">Неизвестный</div>
+        <div id="incoming-controls" class="call-controls" style="display:none;">
+            <button class="call-btn btn-reject" onclick="rejectCall()">❌</button>
+            <button class="call-btn btn-answer" onclick="answerCall()">📞</button>
+        </div>
+        <div id="ongoing-controls" class="call-controls" style="display:none;">
+            <button class="call-btn btn-reject" onclick="endCall()">📴</button>
+        </div>
+    </div>
 
     <div id="login-screen" class="screen">
         <div class="card">
@@ -131,16 +152,21 @@
 
     <div id="connect-screen" class="screen" style="display:none;">
         <div class="card">
-            <h2 id="display-my-id">...</h2>
+            <h2 id="display-my-id" style="font-size: 18px;">Загрузка...</h2>
             <button class="btn-small" onclick="shareId()">📤 Отправить ID</button>
+            <div style="margin-top: 5px;">
+                <button class="btn-small" style="color: #e53e3e; font-size: 10px;" onclick="logout()">Сменить аккаунт</button>
+            </div>
         </div>
         <div class="card">
             <div class="input-group">
-                <span class="input-label">ПОДКЛЮЧИТЬСЯ К ДРУГУ</span>
+                <span class="input-label">НОВЫЙ ЧАТ</span>
                 <input type="text" id="friend-id-input" placeholder="Введите ID друга">
             </div>
             <button id="connect-btn" class="btn-main" onclick="connectToFriend()">🔗 Подключиться</button>
+            <button id="wake-btn" onclick="sendWakeUpNotification()">🔔 Позвать друга</button>
             <hr style="border: 0; border-top: 1px solid #eee; margin: 20px 0;">
+            <span class="input-label">ИСТОРИЯ ЧАТОВ</span>
             <ul id="contacts-list" class="contact-list"></ul>
         </div>
     </div>
@@ -148,30 +174,29 @@
     <div id="chat-screen">
         <div class="chat-header">
             <div class="header-top">
-                <div>
-                    <span id="chat-title" style="font-weight: bold;">Чат</span>
-                    <div id="status-text" style="font-size: 10px; color: #48bb78;">Онлайн</div>
+                <div style="display: flex; align-items: center; gap: 10px;">
+                     <button class="btn-small" onclick="backToContacts()">⬅</button>
+                    <div>
+                        <span id="chat-title" style="font-weight: bold; font-size: 14px;">Чат</span>
+                        <div id="status-text" style="font-size: 10px; color: #48bb78;">Онлайн</div>
+                    </div>
                 </div>
-                <div style="display: flex; gap: 10px;">
+                <div style="display: flex; gap: 5px;">
+                    <button class="icon-btn phone-btn" style="width:35px; height:35px;" onclick="startCall()">📞</button>
                     <button class="btn-small" onclick="saveCurrentContact()">💾</button>
-                    <button class="btn-small" style="color: #e53e3e;" onclick="location.reload()">Выйти</button>
+                    <button class="btn-small trash-btn" onclick="clearHistory()">🗑️</button>
                 </div>
             </div>
             <div class="volume-control">
-                <span>🔊 Громкость:</span>
+                <span>🔊</span>
                 <input type="range" id="vol-slider" min="0" max="1" step="0.05" value="0.1" onchange="setVolume(this.value)">
             </div>
         </div>
-
         <div id="chat-area"></div>
-        
         <div class="input-area">
             <button class="icon-btn" onclick="document.getElementById('image-input').click()">📎</button>
-            
             <input type="text" id="msg-input" placeholder="Сообщение..." onkeypress="handleEnter(event)">
-            
             <button id="mic-btn" class="icon-btn" onclick="toggleRecording()">🎤</button>
-            
             <button class="icon-btn send-btn" onclick="sendMessage()">➤</button>
         </div>
     </div>
@@ -180,17 +205,18 @@
         const peerConfig = { host: '0.peerjs.com', port: 443, secure: true, path: '/', debug: 1 };
         let peer, conn, myId = "", currentFriendId = "";
         let mediaRecorder, audioChunks = [];
-        let currentVolume = 0.1; // ПО УМОЛЧАНИЮ ТИХО (10%)
+        let currentVolume = 0.1;
+        let activeCall = null;
+        let localStream = null;
 
-        // --- ЗВУК ---
         document.addEventListener('click', function() {
             const audio = document.getElementById('msgSound');
             if (audio.paused) { 
-                audio.volume = 0.0; 
-                audio.play().then(() => { audio.pause(); audio.currentTime = 0; }).catch(e=>{}); 
+                audio.volume = 0.0; audio.play().then(() => { audio.pause(); audio.currentTime = 0; }).catch(e=>{}); 
             }
         }, { once: true });
 
+        // === АВТО-ВХОД И ЗАГРУЗКА ===
         window.onload = function() {
             const savedName = localStorage.getItem('myName');
             const savedId = localStorage.getItem('myCustomId');
@@ -198,59 +224,294 @@
 
             if(savedName) document.getElementById('my-name-input').value = savedName;
             if(savedId) document.getElementById('my-custom-id').value = savedId;
+            if(savedVol) { currentVolume = parseFloat(savedVol); document.getElementById('vol-slider').value = currentVolume; }
             
-            if(savedVol) {
-                currentVolume = parseFloat(savedVol);
-                document.getElementById('vol-slider').value = currentVolume;
-            } else {
-                document.getElementById('vol-slider').value = 0.1; // Default
+            // Если данные есть, СРАЗУ входим
+            if (savedName && savedId) {
+                initializePeer(true); // true = автоматический вход
             }
+            
             renderContacts();
         };
 
         function setVolume(val) {
             currentVolume = parseFloat(val);
             localStorage.setItem('chatVolume', currentVolume);
-            const audio = document.getElementById('msgSound');
-            audio.volume = currentVolume;
-            audio.play().catch(()=>{});
+            const audio = document.getElementById('msgSound'); audio.volume = currentVolume; audio.play().catch(()=>{});
         }
-
         function playSound() { 
-            const audio = document.getElementById('msgSound');
-            audio.volume = currentVolume;
-            audio.currentTime = 0;
-            audio.play().catch(e=>{}); 
+            const audio = document.getElementById('msgSound'); audio.volume = currentVolume; audio.currentTime = 0; audio.play().catch(e=>{}); 
         }
 
-        // --- ФОТО ---
-        function handleImageUpload(input) {
-            const file = input.files[0];
-            if (!file) return;
+        // === ИСТОРИЯ СООБЩЕНИЙ ===
+        function saveMessageToHistory(friendId, msgObj) {
+            try {
+                let history = JSON.parse(localStorage.getItem('hist_' + friendId) || "[]");
+                history.push(msgObj);
+                localStorage.setItem('hist_' + friendId, JSON.stringify(history));
+            } catch (e) {
+                console.error("Storage full?", e);
+            }
+        }
 
-            // Простая проверка размера (чтобы не зависло на огромных фото)
-            if (file.size > 5 * 1024 * 1024) {
-                showToast("Фото слишком большое (макс 5Мб)");
-                return;
+        function loadHistory(friendId) {
+            const chatArea = document.getElementById('chat-area');
+            chatArea.innerHTML = ""; // Чистим перед загрузкой
+            let history = JSON.parse(localStorage.getItem('hist_' + friendId) || "[]");
+            
+            history.forEach(msg => {
+                if (msg.type === 'text') addMessage(msg.text, msg.sender, msg.name, false);
+                else if (msg.type === 'image') addImageToChat(msg.data, msg.sender, msg.name, false);
+                else if (msg.type === 'voice') addVoiceToChat(msg.data, msg.sender, msg.name, false);
+            });
+            chatArea.scrollTop = chatArea.scrollHeight;
+        }
+
+        function clearHistory() {
+            if(!currentFriendId) return;
+            if(confirm("Удалить переписку с этим контактом?")) {
+                localStorage.removeItem('hist_' + currentFriendId);
+                document.getElementById('chat-area').innerHTML = "";
+                showToast("История удалена");
+            }
+        }
+
+        // === PEER JS LOGIC ===
+        function initializePeer(isAuto = false) {
+            const name = document.getElementById('my-name-input').value.trim();
+            const customId = document.getElementById('my-custom-id').value.trim().replace(/\s/g, '');
+            if (!name || !customId) return showToast("Заполните поля!");
+            
+            localStorage.setItem('myName', name);
+            localStorage.setItem('myCustomId', customId);
+
+            // Если авто-вход, скрываем логин сразу
+            if(isAuto) {
+                document.getElementById('login-screen').style.display = 'none';
+                document.getElementById('connect-screen').style.display = 'flex';
+                document.getElementById('display-my-id').innerText = "Подключение...";
+            } else {
+                document.querySelector('#login-screen .btn-main').innerText = "Вход...";
             }
 
-            const reader = new FileReader();
-            reader.onload = function(e) {
-                const base64 = e.target.result;
-                const myName = document.getElementById('my-name-input').value;
-                
-                if (conn && conn.open) {
-                    conn.send({ type: 'image', name: myName, data: base64 });
-                    addImageToChat(base64, 'me', myName);
-                } else {
-                    showToast("Нет соединения!");
-                }
-            };
-            reader.readAsDataURL(file);
-            input.value = ''; // Сброс чтобы можно было выбрать то же фото
+            try { peer = new Peer(customId, peerConfig); } catch (e) { }
+
+            peer.on('open', function(id) {
+                myId = id;
+                document.getElementById('login-screen').style.display = 'none';
+                document.getElementById('connect-screen').style.display = 'flex';
+                document.getElementById('display-my-id').innerText = id;
+            });
+            peer.on('error', err => { 
+                showToast("Ошибка ID"); 
+                // Если ошибка при авто-входе, возвращаем на экран логина
+                document.getElementById('connect-screen').style.display = 'none';
+                document.getElementById('login-screen').style.display = 'flex';
+                document.querySelector('#login-screen .btn-main').innerText = "Создать сеть 🌐";
+            });
+            peer.on('connection', c => { conn = c; setupConnection(); });
+            peer.on('call', (call) => { handleIncomingCall(call); });
         }
 
-        // --- ЗАПИСЬ ---
+        function connectToFriend(savedId = null) {
+            const inputId = document.getElementById('friend-id-input').value.replace(/\s/g, ''); 
+            const targetId = savedId || inputId;
+            if (!targetId) return showToast("Введите ID!");
+            
+            const btn = document.getElementById('connect-btn');
+            const wakeBtn = document.getElementById('wake-btn');
+            btn.innerText = "⌛ Поиск..."; btn.disabled = true;
+            wakeBtn.style.display = "none";
+
+            currentFriendId = targetId;
+            try { conn = peer.connect(targetId); } catch(e) {}
+            
+            setTimeout(() => { 
+                if (!conn || !conn.open) { 
+                    btn.innerText = "❌ Не в сети"; btn.disabled = false; wakeBtn.style.display = "block"; showToast("Друг не отвечает.");
+                } 
+            }, 4000);
+
+            conn.on('open', () => { 
+                btn.innerText = "🔗 Подключиться"; btn.disabled = false; wakeBtn.style.display = "none"; 
+                setupUIForChat(); 
+            });
+            setupConnection();
+        }
+
+        function setupConnection() {
+            conn.on('open', () => setupUIForChat());
+            conn.on('data', function(data) {
+                // Если пришло сообщение - сохраняем в историю
+                if (data.type === 'voice') { 
+                    addVoiceToChat(data.data, 'friend', data.name, true); playSound(); 
+                } 
+                else if (data.type === 'image') { 
+                    addImageToChat(data.data, 'friend', data.name, true); playSound(); 
+                } 
+                else if (data.text) { 
+                    if(data.type !== 'call-notify') {
+                        addMessage(data.text, 'friend', data.name, true); 
+                    }
+                    playSound(); 
+                }
+
+                if (data.type === 'call-reject' || data.type === 'call-end') {
+                    closeCallUI(); showToast("Звонок сброшен");
+                }
+            });
+            conn.on('close', () => { showToast("Собеседник вышел"); });
+        }
+
+        function setupUIForChat() {
+            if(conn.peer) currentFriendId = conn.peer;
+            document.getElementById('chat-title').innerText = currentFriendId;
+            
+            // Загружаем историю перед показом экрана
+            loadHistory(currentFriendId);
+            
+            document.getElementById('connect-screen').style.display = 'none';
+            document.getElementById('chat-screen').style.display = 'flex';
+        }
+
+        function backToContacts() {
+            document.getElementById('chat-screen').style.display = 'none';
+            document.getElementById('connect-screen').style.display = 'flex';
+            if(conn) conn.close(); // Отключаемся при выходе, чтобы не висеть
+        }
+
+        function logout() {
+            localStorage.removeItem('myName');
+            localStorage.removeItem('myCustomId');
+            location.reload();
+        }
+
+        // === ОТПРАВКА И СОХРАНЕНИЕ ===
+        function sendMessage() {
+            const input = document.getElementById('msg-input');
+            const text = input.value.trim();
+            const myName = document.getElementById('my-name-input').value;
+            if (!text) return;
+            
+            // Если подключены - отправляем, если нет - просто сохраняем (как черновик или локально)
+            if (conn && conn.open) {
+                conn.send({ text: text, name: myName, type: 'text' });
+            } else {
+                showToast("Офлайн: сохранено в историю");
+            }
+            // Всегда добавляем себе и сохраняем
+            addMessage(text, 'me', myName, true);
+            input.value = '';
+        }
+
+        // Параметр save = true значит "сохранить в память". False используем при загрузке истории.
+        function addMessage(text, type, senderName, save) {
+            const chatArea = document.getElementById('chat-area');
+            const row = document.createElement('div');
+            row.className = `message-row ${type}`;
+            row.innerHTML = `<div class="bubble ${type}">${text}</div>`;
+            chatArea.appendChild(row);
+            chatArea.scrollTop = chatArea.scrollHeight;
+            if(save) saveMessageToHistory(currentFriendId, { type: 'text', text: text, sender: type, name: senderName });
+        }
+
+        function addVoiceToChat(base64, type, senderName, save) {
+            const chatArea = document.getElementById('chat-area');
+            const row = document.createElement('div');
+            row.className = `message-row ${type}`;
+            row.innerHTML = `<div class="bubble ${type}">🎤 Голосовое<br><audio controls src="${base64}"></audio></div>`;
+            chatArea.appendChild(row);
+            chatArea.scrollTop = chatArea.scrollHeight;
+            if(save) saveMessageToHistory(currentFriendId, { type: 'voice', data: base64, sender: type, name: senderName });
+        }
+
+        function addImageToChat(base64, type, senderName, save) {
+            const chatArea = document.getElementById('chat-area');
+            const row = document.createElement('div');
+            row.className = `message-row ${type}`;
+            row.innerHTML = `<div class="bubble ${type}"><img src="${base64}" class="chat-img" onclick="openImage(this)"></div>`;
+            chatArea.appendChild(row);
+            chatArea.scrollTop = chatArea.scrollHeight;
+            if(save) saveMessageToHistory(currentFriendId, { type: 'image', data: base64, sender: type, name: senderName });
+        }
+
+        // ... (Функции звонков и контактов остаются прежними) ...
+        async function startCall() {
+            if (!conn || !conn.open) return showToast("Нет соединения с другом!");
+            showCallUI(currentFriendId, "Исходящий звонок...", false);
+            try {
+                localStream = await navigator.mediaDevices.getUserMedia({ audio: true, video: false });
+                const call = peer.call(currentFriendId, localStream);
+                handleCallStream(call);
+                conn.send({ type: 'call-notify', text: 'Я звоню тебе!' });
+            } catch (err) { closeCallUI(); showToast("Ошибка микрофона: " + err); }
+        }
+        function handleIncomingCall(call) {
+            activeCall = call; document.getElementById('ringtone').play().catch(()=>{});
+            showCallUI(call.peer, "Входящий звонок...", true);
+        }
+        async function answerCall() {
+            document.getElementById('ringtone').pause(); document.getElementById('ringtone').currentTime = 0;
+            try {
+                localStream = await navigator.mediaDevices.getUserMedia({ audio: true, video: false });
+                activeCall.answer(localStream); handleCallStream(activeCall);
+                document.getElementById('incoming-controls').style.display = 'none';
+                document.getElementById('ongoing-controls').style.display = 'flex';
+                document.getElementById('call-status').innerText = "Разговор";
+            } catch (err) { endCall(); showToast("Ошибка микрофона: " + err); }
+        }
+        function rejectCall() {
+            document.getElementById('ringtone').pause(); document.getElementById('ringtone').currentTime = 0;
+            if (activeCall) activeCall.close(); closeCallUI();
+            if(conn && conn.open) conn.send({ type: 'call-reject' });
+        }
+        function endCall() {
+            if (activeCall) activeCall.close();
+            if (localStream) localStream.getTracks().forEach(track => track.stop());
+            closeCallUI();
+            if(conn && conn.open) conn.send({ type: 'call-end' });
+        }
+        function handleCallStream(call) {
+            activeCall = call;
+            call.on('stream', (remoteStream) => {
+                const audioElem = document.getElementById('remote-audio'); audioElem.srcObject = remoteStream;
+                document.getElementById('call-status').innerText = "Идет разговор 🎙️";
+                document.getElementById('incoming-controls').style.display = 'none';
+                document.getElementById('ongoing-controls').style.display = 'flex';
+            });
+            call.on('close', () => { closeCallUI(); showToast("Звонок завершен"); });
+        }
+        function showCallUI(name, status, isIncoming) {
+            const overlay = document.getElementById('call-overlay');
+            document.getElementById('call-name').innerText = name;
+            document.getElementById('call-status').innerText = status;
+            document.getElementById('incoming-controls').style.display = isIncoming ? 'flex' : 'none';
+            document.getElementById('ongoing-controls').style.display = isIncoming ? 'none' : 'flex';
+            overlay.style.display = 'flex';
+        }
+        function closeCallUI() {
+            document.getElementById('call-overlay').style.display = 'none';
+            document.getElementById('ringtone').pause(); document.getElementById('ringtone').currentTime = 0;
+            if (localStream) localStream.getTracks().forEach(track => track.stop());
+            activeCall = null;
+        }
+        function sendWakeUpNotification() {
+            if(!currentFriendId) return;
+            const text = `👋 Привет! Заходи в Чат. Мой ID: ${myId}`;
+            if (navigator.share) { navigator.share({ title: 'P2P Chat', text: text }).catch(() => {}); } 
+            else { navigator.clipboard.writeText(text); alert("Скопировано!"); }
+        }
+        function handleImageUpload(input) {
+            const file = input.files[0]; if (!file) return;
+            if (file.size > 5 * 1024 * 1024) { showToast("Фото > 5Мб"); return; }
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                const base64 = e.target.result; const myName = document.getElementById('my-name-input').value;
+                if (conn && conn.open) conn.send({ type: 'image', name: myName, data: base64 });
+                addImageToChat(base64, 'me', myName, true);
+            };
+            reader.readAsDataURL(file); input.value = '';
+        }
         async function toggleRecording() {
             const btn = document.getElementById('mic-btn');
             if (!mediaRecorder || mediaRecorder.state === "inactive") {
@@ -261,137 +522,22 @@
                     mediaRecorder.ondataavailable = event => audioChunks.push(event.data);
                     mediaRecorder.onstop = () => {
                         const audioBlob = new Blob(audioChunks, { type: 'audio/webm' });
-                        const reader = new FileReader();
-                        reader.readAsDataURL(audioBlob);
+                        const reader = new FileReader(); reader.readAsDataURL(audioBlob);
                         reader.onloadend = function() {
                              if (conn && conn.open) {
                                  const myName = document.getElementById('my-name-input').value;
                                  conn.send({ type: 'voice', name: myName, data: reader.result });
-                                 addVoiceToChat(reader.result, 'me', myName);
                              }
+                             addVoiceToChat(reader.result, 'me', 'Я', true);
                         }
                     };
-                    mediaRecorder.start();
-                    btn.classList.add('recording');
-                } catch (err) { showToast("Нет доступа к микрофону"); }
-            } else {
-                mediaRecorder.stop();
-                btn.classList.remove('recording');
-            }
+                    mediaRecorder.start(); btn.classList.add('recording');
+                } catch (err) { showToast("Нет микрофона"); }
+            } else { mediaRecorder.stop(); btn.classList.remove('recording'); }
         }
-
-        // --- LOGIC ---
-        function initializePeer() {
-            const name = document.getElementById('my-name-input').value.trim();
-            const customId = document.getElementById('my-custom-id').value.trim().replace(/\s/g, '');
-            if (!name || !customId) return showToast("Заполните поля!");
-            
-            localStorage.setItem('myName', name);
-            localStorage.setItem('myCustomId', customId);
-            document.querySelector('#login-screen .btn-main').innerText = "Вход...";
-
-            try { peer = new Peer(customId, peerConfig); } catch (e) { }
-
-            peer.on('open', function(id) {
-                myId = id;
-                document.getElementById('login-screen').style.display = 'none';
-                document.getElementById('connect-screen').style.display = 'flex';
-                document.getElementById('display-my-id').innerText = id;
-            });
-            peer.on('error', err => { showToast("Ошибка ID"); document.querySelector('#login-screen .btn-main').innerText = "Создать сеть 🌐"; });
-            peer.on('connection', c => { conn = c; setupConnection(); });
-        }
-
-        function connectToFriend(savedId = null) {
-            const inputId = document.getElementById('friend-id-input').value.replace(/\s/g, ''); 
-            const targetId = savedId || inputId;
-            if (!targetId) return showToast("Введите ID!");
-            
-            const btn = document.getElementById('connect-btn');
-            btn.innerText = "⌛ Поиск..."; btn.disabled = true;
-
-            currentFriendId = targetId;
-            try { conn = peer.connect(targetId); } catch(e) {}
-            
-            setTimeout(() => { if (!conn || !conn.open) { btn.innerText = "🔗 Подключиться"; btn.disabled = false; showToast("Не удалось"); } }, 5000);
-
-            conn.on('open', () => { btn.innerText = "🔗 Подключиться"; btn.disabled = false; setupUIForChat(); });
-            setupConnection();
-        }
-
-        function setupConnection() {
-            conn.on('open', () => setupUIForChat());
-            conn.on('data', function(data) {
-                if (data.type === 'voice') {
-                    addVoiceToChat(data.data, 'friend', data.name);
-                    playSound();
-                } else if (data.type === 'image') {
-                    addImageToChat(data.data, 'friend', data.name);
-                    playSound();
-                } else if (data.text) {
-                    addMessage(data.text, 'friend', data.name);
-                    playSound();
-                }
-            });
-            conn.on('close', () => { showToast("Собеседник вышел"); setTimeout(() => location.reload(), 2000); });
-        }
-
-        function setupUIForChat() {
-            document.getElementById('connect-screen').style.display = 'none';
-            document.getElementById('chat-screen').style.display = 'flex';
-            if(conn.peer) currentFriendId = conn.peer;
-            document.getElementById('chat-title').innerText = currentFriendId;
-        }
-
-        function sendMessage() {
-            const input = document.getElementById('msg-input');
-            const text = input.value.trim();
-            const myName = document.getElementById('my-name-input').value;
-            if (!text) return;
-            if (conn && conn.open) {
-                conn.send({ text: text, name: myName });
-                addMessage(text, 'me', myName);
-                input.value = '';
-            } else { showToast("Нет соединения!"); }
-        }
-
-        function addMessage(text, type, senderName) {
-            const chatArea = document.getElementById('chat-area');
-            const row = document.createElement('div');
-            row.className = `message-row ${type}`;
-            row.innerHTML = `<div class="bubble ${type}">${text}</div>`;
-            chatArea.appendChild(row);
-            chatArea.scrollTop = chatArea.scrollHeight;
-        }
-
-        function addVoiceToChat(base64, type, senderName) {
-            const chatArea = document.getElementById('chat-area');
-            const row = document.createElement('div');
-            row.className = `message-row ${type}`;
-            row.innerHTML = `<div class="bubble ${type}">🎤 Голосовое<br><audio controls src="${base64}"></audio></div>`;
-            chatArea.appendChild(row);
-            chatArea.scrollTop = chatArea.scrollHeight;
-        }
-
-        function addImageToChat(base64, type, senderName) {
-            const chatArea = document.getElementById('chat-area');
-            const row = document.createElement('div');
-            row.className = `message-row ${type}`;
-            row.innerHTML = `<div class="bubble ${type}"><img src="${base64}" class="chat-img" onclick="openImage(this)"></div>`;
-            chatArea.appendChild(row);
-            chatArea.scrollTop = chatArea.scrollHeight;
-        }
-
-        // Просмотр фото на весь экран при клике (простой вариант)
-        function openImage(img) {
-            const win = window.open("");
-            win.document.write('<img src="' + img.src + '" style="width:100%">');
-        }
-
         function saveCurrentContact() {
             if (!currentFriendId) return;
-            const name = prompt("Имя контакта?", currentFriendId);
-            if (!name) return;
+            const name = prompt("Имя контакта?", currentFriendId); if (!name) return;
             let contacts = JSON.parse(localStorage.getItem('myContacts') || "[]");
             if(!contacts.some(c => c.id === currentFriendId)) {
                 contacts.push({ name: name, id: currentFriendId });
@@ -404,8 +550,7 @@
             const contacts = JSON.parse(localStorage.getItem('myContacts') || "[]");
             list.innerHTML = "";
             contacts.forEach((c, index) => {
-                const li = document.createElement('li');
-                li.className = 'contact-item';
+                const li = document.createElement('li'); li.className = 'contact-item';
                 li.innerHTML = `<div onclick="connectToFriend('${c.id}')" style="width:100%"><div class="contact-name">${c.name}</div><div class="contact-id">${c.id}</div></div><div class="delete-contact" onclick="deleteContact(${index})">×</div>`;
                 list.appendChild(li);
             });
@@ -414,7 +559,7 @@
             let contacts = JSON.parse(localStorage.getItem('myContacts') || "[]");
             contacts.splice(i, 1); localStorage.setItem('myContacts', JSON.stringify(contacts)); renderContacts();
         }
-
+        function openImage(img) { const win = window.open(""); win.document.write('<img src="' + img.src + '" style="width:100%">'); }
         function handleEnter(e) { if (e.key === 'Enter') sendMessage(); }
         function shareId() { navigator.clipboard.writeText(myId); showToast("Скопировано!"); }
         function showToast(msg) { const t = document.getElementById('toast'); t.innerText = msg; t.classList.add('show'); setTimeout(()=>t.classList.remove('show'), 3000); }
