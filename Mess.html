@@ -1,0 +1,326 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>P2P Chat</title>
+    <script src="https://unpkg.com/peerjs@1.5.2/dist/peerjs.min.js"></script>
+    <style>
+        :root {
+            --primary-gradient: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            --bg-color: #f4f6f9;
+            --white: #ffffff;
+            --text-dark: #2d3748;
+            --text-light: #718096;
+            --shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+        }
+
+        * { box-sizing: border-box; outline: none; -webkit-tap-highlight-color: transparent; }
+        
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            background-color: var(--bg-color);
+            margin: 0;
+            height: 100vh;
+            display: flex;
+            flex-direction: column;
+            color: var(--text-dark);
+        }
+
+        /* ЭКРАНЫ */
+        .screen {
+            padding: 20px;
+            max-width: 500px;
+            width: 100%;
+            margin: 0 auto;
+            flex-grow: 1;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+        }
+
+        .card {
+            background: var(--white);
+            border-radius: 24px;
+            padding: 30px 20px;
+            box-shadow: var(--shadow);
+            text-align: center;
+            margin-bottom: 20px;
+        }
+
+        h2 { margin: 0 0 5px; font-weight: 800; font-size: 24px; background: var(--primary-gradient); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
+        p { color: var(--text-light); font-size: 14px; margin-bottom: 20px; }
+
+        .input-group { position: relative; margin-bottom: 15px; text-align: left; }
+        .input-label { font-size: 12px; font-weight: bold; color: var(--text-light); margin-left: 10px; margin-bottom: 5px; display: block; }
+        
+        input[type="text"] {
+            width: 100%;
+            padding: 16px;
+            border: 2px solid #e2e8f0;
+            border-radius: 16px;
+            font-size: 16px;
+            background: #f8fafc;
+            transition: 0.3s;
+        }
+        input[type="text"]:focus { border-color: #667eea; background: #fff; }
+
+        /* ID ДИСПЛЕЙ */
+        .id-display {
+            background: #edf2f7;
+            padding: 15px;
+            border-radius: 16px;
+            font-family: monospace;
+            font-size: 18px;
+            color: #4a5568;
+            margin-bottom: 15px;
+            word-break: break-all;
+            cursor: pointer;
+            border: 2px dashed #cbd5e0;
+        }
+
+        /* КНОПКИ */
+        .btn-main {
+            width: 100%;
+            padding: 16px;
+            border: none;
+            border-radius: 16px;
+            background: var(--primary-gradient);
+            color: white;
+            font-size: 16px;
+            font-weight: bold;
+            cursor: pointer;
+            box-shadow: 0 4px 6px rgba(102, 126, 234, 0.25);
+            margin-top: 10px;
+        }
+        .btn-main:active { transform: scale(0.98); opacity: 0.9; }
+
+        /* Новая кнопка "Поделиться" (белая с рамкой) */
+        .btn-outline {
+            width: 100%;
+            padding: 12px;
+            border: 2px solid #667eea;
+            border-radius: 16px;
+            background: transparent;
+            color: #667eea;
+            font-size: 15px;
+            font-weight: 600;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+        }
+        .btn-outline:active { background: #ebf4ff; }
+
+        /* ЧАТ */
+        #chat-screen { display: none; flex-direction: column; height: 100%; background: white; }
+
+        .chat-header {
+            padding: 15px 20px;
+            background: rgba(255,255,255,0.9);
+            border-bottom: 1px solid #edf2f7;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+        .status-dot { height: 10px; width: 10px; background-color: #ccc; border-radius: 50%; display: inline-block; margin-right: 5px; }
+        .status-dot.online { background-color: #48bb78; }
+
+        #chat-area { flex-grow: 1; padding: 20px; overflow-y: auto; display: flex; flex-direction: column; background-color: #f4f6f9; }
+
+        .message-row { display: flex; margin-bottom: 15px; width: 100%; }
+        .message-row.me { justify-content: flex-end; }
+        .bubble {
+            max-width: 75%; padding: 12px 16px; border-radius: 18px; font-size: 15px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+            animation: popIn 0.3s;
+        }
+        .bubble.me { background: var(--primary-gradient); color: white; border-bottom-right-radius: 4px; }
+        .bubble.friend { background: white; color: var(--text-dark); border-bottom-left-radius: 4px; }
+        .sender-name { font-size: 11px; margin-bottom: 4px; opacity: 0.7; font-weight: 600; display: block; }
+        @keyframes popIn { from { transform: scale(0.5); opacity: 0; } to { transform: scale(1); opacity: 1; } }
+
+        .input-area { padding: 15px; background: white; border-top: 1px solid #edf2f7; display: flex; gap: 10px; }
+        #msg-input { flex-grow: 1; background: #f4f6f9; border: none; border-radius: 25px; padding: 12px 20px; }
+        .send-btn { background: var(--primary-gradient); color: white; border: none; width: 45px; height: 45px; border-radius: 50%; cursor: pointer; font-size: 18px; }
+
+        /* Всплывашка */
+        .toast {
+            position: fixed; top: 20px; left: 50%; transform: translateX(-50%);
+            background: #2d3748; color: white; padding: 10px 20px; border-radius: 30px;
+            font-size: 14px; opacity: 0; transition: opacity 0.3s; pointer-events: none; z-index: 100;
+        }
+        .toast.show { opacity: 1; }
+    </style>
+</head>
+<body>
+
+    <div id="toast" class="toast">Текст скопирован!</div>
+
+    <div id="login-screen" class="screen">
+        <div class="card">
+            <h2>P2P Messenger</h2>
+            <p>Ваше имя и ID</p>
+            
+            <div class="input-group">
+                <input type="text" id="my-name-input" value="User" placeholder="Ваше имя">
+            </div>
+
+            <div class="input-group">
+                <span class="input-label">ВАШ ID</span>
+                <div id="my-id" class="id-display" onclick="copyId()">Генерация...</div>
+                
+                <button class="btn-outline" onclick="shareId()">
+                    📤 Отправить ID другу
+                </button>
+            </div>
+            
+            <p id="status-text" style="font-size: 12px; color: #a0aec0; margin-top: 10px;">Ожидание сети...</p>
+        </div>
+
+        <div class="card">
+            <div class="input-group">
+                <span class="input-label">ПОДКЛЮЧИТЬСЯ К ДРУГУ</span>
+                <input type="text" id="friend-id-input" placeholder="Вставьте ID друга">
+            </div>
+            <button class="btn-main" onclick="connectToFriend()">Начать чат</button>
+        </div>
+    </div>
+
+    <div id="chat-screen">
+        <div class="chat-header">
+            <div><span id="status-dot" class="status-dot"></span><span class="chat-title" id="chat-title">Чат</span></div>
+            <button style="background:none; border:none; color: #e53e3e; font-weight:bold;" onclick="location.reload()">Выйти</button>
+        </div>
+
+        <div id="chat-area"></div>
+
+        <div class="input-area">
+            <input type="text" id="msg-input" placeholder="Сообщение..." onkeypress="handleEnter(event)">
+            <button class="send-btn" onclick="sendMessage()">➤</button>
+        </div>
+    </div>
+
+    <script>
+        const peerConfig = {
+            host: '0.peerjs.com', port: 443, secure: true, path: '/', debug: 2,
+        };
+
+        let peer;
+        let conn;
+
+        try { peer = new Peer(null, peerConfig); } catch (e) { console.error(e); }
+
+        // === ГЛАВНАЯ ФИШКА: WEB SHARE API ===
+        function shareId() {
+            const idText = document.getElementById('my-id').innerText;
+            const myName = document.getElementById('my-name-input').value;
+            const siteUrl = window.location.href; // Ссылка на ваш сайт
+
+            if (idText === 'Генерация...') return;
+
+            // Данные для отправки
+            const shareData = {
+                title: 'Приглашение в чат',
+                text: `Привет! Давай пообщаемся в приватном чате. \nМой ID: ${idText}\nЗаходи сюда: ${siteUrl}`,
+                url: siteUrl
+            };
+
+            // Проверяем, поддерживает ли браузер "Поделиться"
+            if (navigator.share) {
+                navigator.share(shareData)
+                    .then(() => console.log('Успешно отправлено'))
+                    .catch((error) => console.log('Ошибка отправки', error));
+            } else {
+                // Если с компа (где нет меню "поделиться"), просто копируем
+                copyId();
+                showToast("Меню 'Поделиться' недоступно, ID скопирован!");
+            }
+        }
+
+        // Просто копирование (при нажатии на сам ID)
+        function copyId() {
+            const idText = document.getElementById('my-id').innerText;
+            if (idText === 'Генерация...') return;
+            navigator.clipboard.writeText(idText).then(() => showToast("ID скопирован!"));
+        }
+
+        function showToast(msg) {
+            const toast = document.getElementById('toast');
+            toast.innerText = msg;
+            toast.classList.add('show');
+            setTimeout(() => toast.classList.remove('show'), 2000);
+        }
+
+        // --- ЛОГИКА ЧАТА ---
+        peer.on('open', function(id) {
+            document.getElementById('my-id').innerText = id;
+            document.getElementById('status-text').innerText = "Готов к подключению ✅";
+            document.getElementById('status-text').style.color = "#48bb78";
+        });
+
+        peer.on('connection', function(c) {
+            conn = c;
+            setupConnection();
+        });
+
+        function connectToFriend() {
+            const friendId = document.getElementById('friend-id-input').value.trim();
+            if (!friendId) return showToast("Введите ID друга!");
+            conn = peer.connect(friendId);
+            setupConnection();
+        }
+
+        function setupConnection() {
+            conn.on('open', function(){
+                document.getElementById('login-screen').style.display = 'none';
+                document.getElementById('chat-screen').style.display = 'flex';
+                document.getElementById('status-dot').classList.add('online');
+                document.getElementById('chat-title').innerText = "Подключено";
+            });
+            conn.on('data', function(data) {
+                if (typeof data === 'object') addMessage(data.text, 'friend', data.name);
+                else addMessage(data, 'friend', 'Собеседник');
+            });
+            conn.on('close', () => {
+                showToast("Собеседник отключился");
+                setTimeout(() => location.reload(), 2000);
+            });
+        }
+
+        function sendMessage() {
+            const input = document.getElementById('msg-input');
+            const text = input.value.trim();
+            const myName = document.getElementById('my-name-input').value || "Я";
+            if (!text) return;
+
+            if (conn && conn.open) {
+                conn.send({ name: myName, text: text });
+                addMessage(text, 'me', myName);
+                input.value = '';
+            } else { showToast("Нет соединения!"); }
+        }
+
+        function handleEnter(e) { if (e.key === 'Enter') sendMessage(); }
+
+        function addMessage(text, type, senderName) {
+            const chatArea = document.getElementById('chat-area');
+            const row = document.createElement('div');
+            row.className = `message-row ${type}`;
+            const bubble = document.createElement('div');
+            bubble.className = `bubble ${type}`;
+            
+            const nameSpan = document.createElement('span');
+            nameSpan.className = 'sender-name';
+            nameSpan.innerText = senderName;
+            
+            bubble.appendChild(nameSpan);
+            bubble.appendChild(document.createTextNode(text));
+            row.appendChild(bubble);
+            chatArea.appendChild(row);
+            chatArea.scrollTop = chatArea.scrollHeight;
+        }
+    </script>
+</body>
+</html>
