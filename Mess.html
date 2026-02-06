@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>P2P Chat</title>
+    <title>P2P Chat 3.1 Fix</title>
     <script src="https://unpkg.com/peerjs@1.5.2/dist/peerjs.min.js"></script>
     <style>
         :root {
@@ -27,175 +27,112 @@
             color: var(--text-dark);
         }
 
-        /* ЭКРАНЫ */
-        .screen {
-            padding: 20px;
-            max-width: 500px;
-            width: 100%;
-            margin: 0 auto;
-            flex-grow: 1;
-            display: flex;
-            flex-direction: column;
-            justify-content: center;
-        }
+        .screen { padding: 20px; max-width: 500px; width: 100%; margin: 0 auto; flex-grow: 1; display: flex; flex-direction: column; justify-content: center; }
 
         .card {
-            background: var(--white);
-            border-radius: 24px;
-            padding: 30px 20px;
-            box-shadow: var(--shadow);
-            text-align: center;
-            margin-bottom: 20px;
+            background: var(--white); border-radius: 24px; padding: 25px; box-shadow: var(--shadow);
+            text-align: center; margin-bottom: 20px;
         }
 
-        h2 { margin: 0 0 5px; font-weight: 800; font-size: 24px; background: var(--primary-gradient); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
-        p { color: var(--text-light); font-size: 14px; margin-bottom: 20px; }
-
-        .input-group { position: relative; margin-bottom: 15px; text-align: left; }
+        h2 { margin: 0 0 10px; font-weight: 800; font-size: 24px; background: var(--primary-gradient); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
+        
+        .input-group { margin-bottom: 15px; text-align: left; }
         .input-label { font-size: 12px; font-weight: bold; color: var(--text-light); margin-left: 10px; margin-bottom: 5px; display: block; }
         
         input[type="text"] {
-            width: 100%;
-            padding: 16px;
-            border: 2px solid #e2e8f0;
-            border-radius: 16px;
-            font-size: 16px;
-            background: #f8fafc;
-            transition: 0.3s;
+            width: 100%; padding: 16px; border: 2px solid #e2e8f0; border-radius: 16px; font-size: 16px; background: #f8fafc; transition: 0.3s;
         }
         input[type="text"]:focus { border-color: #667eea; background: #fff; }
 
-        /* ID ДИСПЛЕЙ */
-        .id-display {
-            background: #edf2f7;
-            padding: 15px;
-            border-radius: 16px;
-            font-family: monospace;
-            font-size: 18px;
-            color: #4a5568;
-            margin-bottom: 15px;
-            word-break: break-all;
-            cursor: pointer;
-            border: 2px dashed #cbd5e0;
-        }
-
-        /* КНОПКИ */
         .btn-main {
-            width: 100%;
-            padding: 16px;
-            border: none;
-            border-radius: 16px;
-            background: var(--primary-gradient);
-            color: white;
-            font-size: 16px;
-            font-weight: bold;
-            cursor: pointer;
-            box-shadow: 0 4px 6px rgba(102, 126, 234, 0.25);
-            margin-top: 10px;
+            width: 100%; padding: 16px; border: none; border-radius: 16px; background: var(--primary-gradient); color: white; font-size: 16px; font-weight: bold; cursor: pointer; margin-top: 10px; transition: 0.2s;
         }
         .btn-main:active { transform: scale(0.98); opacity: 0.9; }
+        .btn-main:disabled { background: #cbd5e0; cursor: not-allowed; transform: none; }
 
-        /* Новая кнопка "Поделиться" (белая с рамкой) */
-        .btn-outline {
-            width: 100%;
-            padding: 12px;
-            border: 2px solid #667eea;
-            border-radius: 16px;
-            background: transparent;
-            color: #667eea;
-            font-size: 15px;
-            font-weight: 600;
-            cursor: pointer;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            gap: 8px;
+        .btn-small { padding: 8px 15px; border-radius: 10px; background: #edf2f7; color: #4a5568; border: none; font-size: 13px; font-weight: 600; cursor: pointer; }
+        
+        .contact-list { list-style: none; padding: 0; margin: 10px 0; text-align: left; max-height: 150px; overflow-y: auto; }
+        .contact-item { 
+            background: #f7fafc; padding: 12px; margin-bottom: 8px; border-radius: 12px; 
+            display: flex; justify-content: space-between; align-items: center; border: 1px solid #edf2f7; cursor: pointer;
         }
-        .btn-outline:active { background: #ebf4ff; }
+        .contact-name { font-weight: bold; color: #4a5568; font-size: 14px; }
+        .contact-id { font-size: 11px; color: #a0aec0; }
+        .delete-contact { color: #e53e3e; font-size: 18px; padding: 0 10px; cursor: pointer; }
 
-        /* ЧАТ */
         #chat-screen { display: none; flex-direction: column; height: 100%; background: white; }
-
-        .chat-header {
-            padding: 15px 20px;
-            background: rgba(255,255,255,0.9);
-            border-bottom: 1px solid #edf2f7;
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-        }
-        .status-dot { height: 10px; width: 10px; background-color: #ccc; border-radius: 50%; display: inline-block; margin-right: 5px; }
-        .status-dot.online { background-color: #48bb78; }
-
+        .chat-header { padding: 15px 20px; background: rgba(255,255,255,0.95); border-bottom: 1px solid #edf2f7; display: flex; align-items: center; justify-content: space-between; }
+        
         #chat-area { flex-grow: 1; padding: 20px; overflow-y: auto; display: flex; flex-direction: column; background-color: #f4f6f9; }
-
+        
         .message-row { display: flex; margin-bottom: 15px; width: 100%; }
         .message-row.me { justify-content: flex-end; }
-        .bubble {
-            max-width: 75%; padding: 12px 16px; border-radius: 18px; font-size: 15px;
-            box-shadow: 0 2px 4px rgba(0,0,0,0.05);
-            animation: popIn 0.3s;
-        }
+        .bubble { max-width: 75%; padding: 12px 16px; border-radius: 18px; font-size: 15px; box-shadow: 0 2px 4px rgba(0,0,0,0.05); }
         .bubble.me { background: var(--primary-gradient); color: white; border-bottom-right-radius: 4px; }
         .bubble.friend { background: white; color: var(--text-dark); border-bottom-left-radius: 4px; }
-        .sender-name { font-size: 11px; margin-bottom: 4px; opacity: 0.7; font-weight: 600; display: block; }
-        @keyframes popIn { from { transform: scale(0.5); opacity: 0; } to { transform: scale(1); opacity: 1; } }
-
+        
         .input-area { padding: 15px; background: white; border-top: 1px solid #edf2f7; display: flex; gap: 10px; }
         #msg-input { flex-grow: 1; background: #f4f6f9; border: none; border-radius: 25px; padding: 12px 20px; }
-        .send-btn { background: var(--primary-gradient); color: white; border: none; width: 45px; height: 45px; border-radius: 50%; cursor: pointer; font-size: 18px; }
+        .send-btn { background: var(--primary-gradient); color: white; border: none; width: 45px; height: 45px; border-radius: 50%; cursor: pointer; display: flex; justify-content: center; align-items: center;}
 
-        /* Всплывашка */
-        .toast {
-            position: fixed; top: 20px; left: 50%; transform: translateX(-50%);
-            background: #2d3748; color: white; padding: 10px 20px; border-radius: 30px;
-            font-size: 14px; opacity: 0; transition: opacity 0.3s; pointer-events: none; z-index: 100;
-        }
+        .toast { position: fixed; top: 20px; left: 50%; transform: translateX(-50%); background: #2d3748; color: white; padding: 10px 20px; border-radius: 30px; font-size: 14px; opacity: 0; transition: opacity 0.3s; pointer-events: none; z-index: 100; }
         .toast.show { opacity: 1; }
     </style>
 </head>
 <body>
 
-    <div id="toast" class="toast">Текст скопирован!</div>
+    <div id="toast" class="toast">Уведомление</div>
 
     <div id="login-screen" class="screen">
         <div class="card">
-            <h2>P2P Messenger</h2>
-            <p>Ваше имя и ID</p>
-            
+            <h2>Вход</h2>
             <div class="input-group">
-                <input type="text" id="my-name-input" value="User" placeholder="Ваше имя">
+                <span class="input-label">ВАШЕ ИМЯ</span>
+                <input type="text" id="my-name-input" placeholder="Имя">
             </div>
+            <div class="input-group">
+                <span class="input-label">ПРИДУМАЙТЕ СЕБЕ ID</span>
+                <input type="text" id="my-custom-id" placeholder="Например: yura777">
+            </div>
+            <button class="btn-main" onclick="initializePeer()">Создать сеть 🌐</button>
+        </div>
+    </div>
 
-            <div class="input-group">
-                <span class="input-label">ВАШ ID</span>
-                <div id="my-id" class="id-display" onclick="copyId()">Генерация...</div>
-                
-                <button class="btn-outline" onclick="shareId()">
-                    📤 Отправить ID другу
-                </button>
-            </div>
-            
-            <p id="status-text" style="font-size: 12px; color: #a0aec0; margin-top: 10px;">Ожидание сети...</p>
+    <div id="connect-screen" class="screen" style="display:none;">
+        <div class="card">
+            <h2 id="display-my-id">...</h2>
+            <button class="btn-small" onclick="shareId()">📤 Отправить ID</button>
         </div>
 
         <div class="card">
             <div class="input-group">
                 <span class="input-label">ПОДКЛЮЧИТЬСЯ К ДРУГУ</span>
-                <input type="text" id="friend-id-input" placeholder="Вставьте ID друга">
+                <input type="text" id="friend-id-input" placeholder="Введите ID друга">
             </div>
-            <button class="btn-main" onclick="connectToFriend()">Начать чат</button>
+            <button id="connect-btn" class="btn-main" onclick="connectToFriend()">📞 Позвонить</button>
+            
+            <hr style="border: 0; border-top: 1px solid #eee; margin: 20px 0;">
+            
+            <span class="input-label">КОНТАКТЫ</span>
+            <ul id="contacts-list" class="contact-list">
+                <li style="text-align: center; color: #cbd5e0; font-size: 12px;">Нет контактов</li>
+            </ul>
         </div>
     </div>
 
     <div id="chat-screen">
         <div class="chat-header">
-            <div><span id="status-dot" class="status-dot"></span><span class="chat-title" id="chat-title">Чат</span></div>
-            <button style="background:none; border:none; color: #e53e3e; font-weight:bold;" onclick="location.reload()">Выйти</button>
+            <div>
+                <span id="chat-title" style="font-weight: bold;">Чат</span>
+                <div id="status-text" style="font-size: 10px; color: #48bb78;">Онлайн</div>
+            </div>
+            <div style="display: flex; gap: 10px;">
+                <button class="btn-small" onclick="saveCurrentContact()">💾 Сохр.</button>
+                <button class="btn-small" style="color: #e53e3e;" onclick="location.reload()">Выйти</button>
+            </div>
         </div>
-
         <div id="chat-area"></div>
-
         <div class="input-area">
             <input type="text" id="msg-input" placeholder="Сообщение..." onkeypress="handleEnter(event)">
             <button class="send-btn" onclick="sendMessage()">➤</button>
@@ -203,98 +140,180 @@
     </div>
 
     <script>
-        const peerConfig = {
-            host: '0.peerjs.com', port: 443, secure: true, path: '/', debug: 2,
-        };
-
+        const peerConfig = { host: '0.peerjs.com', port: 443, secure: true, path: '/', debug: 1 };
         let peer;
         let conn;
+        let myId = "";
+        let currentFriendId = "";
 
-        try { peer = new Peer(null, peerConfig); } catch (e) { console.error(e); }
+        window.onload = function() {
+            const savedName = localStorage.getItem('myName');
+            const savedId = localStorage.getItem('myCustomId');
+            if(savedName) document.getElementById('my-name-input').value = savedName;
+            if(savedId) document.getElementById('my-custom-id').value = savedId;
+            renderContacts();
+        };
 
-        // === ГЛАВНАЯ ФИШКА: WEB SHARE API ===
-        function shareId() {
-            const idText = document.getElementById('my-id').innerText;
-            const myName = document.getElementById('my-name-input').value;
-            const siteUrl = window.location.href; // Ссылка на ваш сайт
+        function initializePeer() {
+            const name = document.getElementById('my-name-input').value.trim();
+            const customId = document.getElementById('my-custom-id').value.trim(); // Убираем пробелы
+            
+            if (!name || !customId) return showToast("Заполните поля!");
+            
+            localStorage.setItem('myName', name);
+            localStorage.setItem('myCustomId', customId);
 
-            if (idText === 'Генерация...') return;
+            const btn = document.querySelector('#login-screen .btn-main');
+            btn.innerText = "Вход...";
+            btn.disabled = true;
 
-            // Данные для отправки
-            const shareData = {
-                title: 'Приглашение в чат',
-                text: `Привет! Давай пообщаемся в приватном чате. \nМой ID: ${idText}\nЗаходи сюда: ${siteUrl}`,
-                url: siteUrl
-            };
+            try {
+                peer = new Peer(customId, peerConfig);
+            } catch (e) { console.error(e); }
 
-            // Проверяем, поддерживает ли браузер "Поделиться"
-            if (navigator.share) {
-                navigator.share(shareData)
-                    .then(() => console.log('Успешно отправлено'))
-                    .catch((error) => console.log('Ошибка отправки', error));
-            } else {
-                // Если с компа (где нет меню "поделиться"), просто копируем
-                copyId();
-                showToast("Меню 'Поделиться' недоступно, ID скопирован!");
+            peer.on('open', function(id) {
+                myId = id;
+                document.getElementById('login-screen').style.display = 'none';
+                document.getElementById('connect-screen').style.display = 'flex';
+                document.getElementById('display-my-id').innerText = id;
+            });
+
+            peer.on('error', function(err) {
+                btn.innerText = "Создать сеть 🌐";
+                btn.disabled = false;
+                if(err.type === 'unavailable-id') alert("ID занят! Попробуйте другой.");
+                else alert("Ошибка сети. Включите VPN.");
+            });
+
+            peer.on('connection', function(c) {
+                conn = c;
+                setupConnection();
+            });
+        }
+
+        function connectToFriend(savedId = null) {
+            // 1. Получаем ID и чистим от пробелов жестко
+            const inputId = document.getElementById('friend-id-input').value.replace(/\s/g, ''); 
+            const targetId = savedId || inputId;
+
+            // 2. Проверки
+            if (!targetId) return showToast("Введите ID!");
+            if (targetId === myId) return showToast("Это ваш собственный ID!");
+            if (!peer || peer.disconnected) return showToast("Нет соединения с сервером!");
+
+            // 3. Визуальная реакция кнопки (ЧТОБЫ БЫЛО ВИДНО)
+            const btn = document.getElementById('connect-btn');
+            const originalText = btn.innerText;
+            btn.innerText = "⌛ Поиск...";
+            btn.disabled = true;
+
+            // 4. Запускаем соединение
+            currentFriendId = targetId;
+            try {
+                conn = peer.connect(targetId);
+            } catch(e) {
+                resetConnectBtn(btn, originalText);
+                showToast("Ошибка запуска: " + e);
+                return;
             }
-        }
 
-        // Просто копирование (при нажатии на сам ID)
-        function copyId() {
-            const idText = document.getElementById('my-id').innerText;
-            if (idText === 'Генерация...') return;
-            navigator.clipboard.writeText(idText).then(() => showToast("ID скопирован!"));
-        }
+            // 5. Таймер: если через 5 секунд не подключилось - сброс
+            const timeout = setTimeout(() => {
+                if (!conn || !conn.open) {
+                    resetConnectBtn(btn, originalText);
+                    showToast("Не удалось подключиться. Проверьте ID.");
+                    conn.close();
+                }
+            }, 5000);
 
-        function showToast(msg) {
-            const toast = document.getElementById('toast');
-            toast.innerText = msg;
-            toast.classList.add('show');
-            setTimeout(() => toast.classList.remove('show'), 2000);
-        }
+            // 6. Если подключилось успешно
+            conn.on('open', function() {
+                clearTimeout(timeout);
+                resetConnectBtn(btn, originalText);
+                setupUIForChat();
+            });
 
-        // --- ЛОГИКА ЧАТА ---
-        peer.on('open', function(id) {
-            document.getElementById('my-id').innerText = id;
-            document.getElementById('status-text').innerText = "Готов к подключению ✅";
-            document.getElementById('status-text').style.color = "#48bb78";
-        });
+            // Ловим ошибки конкретного соединения
+            conn.on('error', function(err) {
+                clearTimeout(timeout);
+                resetConnectBtn(btn, originalText);
+                showToast("Ошибка связи");
+            });
 
-        peer.on('connection', function(c) {
-            conn = c;
             setupConnection();
-        });
+        }
 
-        function connectToFriend() {
-            const friendId = document.getElementById('friend-id-input').value.trim();
-            if (!friendId) return showToast("Введите ID друга!");
-            conn = peer.connect(friendId);
-            setupConnection();
+        function resetConnectBtn(btn, text) {
+            btn.innerText = text;
+            btn.disabled = false;
         }
 
         function setupConnection() {
-            conn.on('open', function(){
-                document.getElementById('login-screen').style.display = 'none';
-                document.getElementById('chat-screen').style.display = 'flex';
-                document.getElementById('status-dot').classList.add('online');
-                document.getElementById('chat-title').innerText = "Подключено";
+            conn.on('open', function() {
+               setupUIForChat();
             });
             conn.on('data', function(data) {
                 if (typeof data === 'object') addMessage(data.text, 'friend', data.name);
-                else addMessage(data, 'friend', 'Собеседник');
             });
             conn.on('close', () => {
-                showToast("Собеседник отключился");
+                showToast("Собеседник вышел");
                 setTimeout(() => location.reload(), 2000);
             });
+        }
+
+        function setupUIForChat() {
+            document.getElementById('connect-screen').style.display = 'none';
+            document.getElementById('chat-screen').style.display = 'flex';
+            document.getElementById('chat-title').innerText = currentFriendId;
+            // Если входящее
+            if(conn.peer) currentFriendId = conn.peer;
+            document.getElementById('chat-title').innerText = currentFriendId;
+        }
+
+        // Остальные функции без изменений
+        function saveCurrentContact() {
+            if (!currentFriendId) return;
+            const name = prompt("Имя контакта?", currentFriendId);
+            if (!name) return;
+            let contacts = JSON.parse(localStorage.getItem('myContacts') || "[]");
+            if(!contacts.some(c => c.id === currentFriendId)) {
+                contacts.push({ name: name, id: currentFriendId });
+                localStorage.setItem('myContacts', JSON.stringify(contacts));
+                renderContacts();
+            }
+        }
+
+        function renderContacts() {
+            const list = document.getElementById('contacts-list');
+            const contacts = JSON.parse(localStorage.getItem('myContacts') || "[]");
+            if (contacts.length === 0) return;
+            list.innerHTML = "";
+            contacts.forEach((c, index) => {
+                const li = document.createElement('li');
+                li.className = 'contact-item';
+                li.innerHTML = `
+                    <div onclick="connectToFriend('${c.id}')" style="width: 100%">
+                        <div class="contact-name">${c.name}</div>
+                        <div class="contact-id">${c.id}</div>
+                    </div>
+                    <div class="delete-contact" onclick="deleteContact(${index})">×</div>
+                `;
+                list.appendChild(li);
+            });
+        }
+
+        function deleteContact(index) {
+            let contacts = JSON.parse(localStorage.getItem('myContacts') || "[]");
+            contacts.splice(index, 1);
+            localStorage.setItem('myContacts', JSON.stringify(contacts));
+            renderContacts();
         }
 
         function sendMessage() {
             const input = document.getElementById('msg-input');
             const text = input.value.trim();
-            const myName = document.getElementById('my-name-input').value || "Я";
+            const myName = document.getElementById('my-name-input').value;
             if (!text) return;
-
             if (conn && conn.open) {
                 conn.send({ name: myName, text: text });
                 addMessage(text, 'me', myName);
@@ -302,24 +321,35 @@
             } else { showToast("Нет соединения!"); }
         }
 
-        function handleEnter(e) { if (e.key === 'Enter') sendMessage(); }
-
         function addMessage(text, type, senderName) {
             const chatArea = document.getElementById('chat-area');
             const row = document.createElement('div');
             row.className = `message-row ${type}`;
             const bubble = document.createElement('div');
             bubble.className = `bubble ${type}`;
-            
-            const nameSpan = document.createElement('span');
-            nameSpan.className = 'sender-name';
-            nameSpan.innerText = senderName;
-            
-            bubble.appendChild(nameSpan);
-            bubble.appendChild(document.createTextNode(text));
+            bubble.innerText = text;
             row.appendChild(bubble);
             chatArea.appendChild(row);
             chatArea.scrollTop = chatArea.scrollHeight;
+        }
+
+        function handleEnter(e) { if (e.key === 'Enter') sendMessage(); }
+
+        function shareId() {
+            const text = `Мой ID: ${myId}`;
+            if (navigator.share) {
+                navigator.share({ title: 'Chat ID', text: text });
+            } else {
+                navigator.clipboard.writeText(myId);
+                showToast("Скопировано!");
+            }
+        }
+
+        function showToast(msg) {
+            const toast = document.getElementById('toast');
+            toast.innerText = msg;
+            toast.classList.add('show');
+            setTimeout(() => toast.classList.remove('show'), 3000);
         }
     </script>
 </body>
