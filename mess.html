@@ -3,110 +3,158 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Мой P2P Мессенджер</title>
+    <title>P2P Debug Chat</title>
     <script src="https://unpkg.com/peerjs@1.5.2/dist/peerjs.min.js"></script>
     <style>
-        body { font-family: sans-serif; padding: 20px; max-width: 600px; margin: 0 auto; }
-        .box { border: 1px solid #ccc; padding: 15px; margin-bottom: 20px; border-radius: 8px; background: #f9f9f9; }
-        input { padding: 10px; width: 70%; border: 1px solid #ddd; border-radius: 4px; }
-        button { padding: 10px 20px; background: #007bff; color: white; border: none; border-radius: 4px; cursor: pointer; }
-        button:hover { background: #0056b3; }
-        #chat-area { height: 300px; border: 1px solid #ddd; overflow-y: scroll; padding: 10px; background: white; margin-bottom: 10px; }
-        .message { margin-bottom: 10px; padding: 8px; border-radius: 10px; max-width: 80%; }
-        .my-msg { background: #dcf8c6; margin-left: auto; text-align: right; } /* Зеленые сообщения (мои) */
-        .friend-msg { background: #e8e8e8; margin-right: auto; } /* Серые сообщения (друга) */
-        #status { font-weight: bold; color: #666; }
+        body { font-family: sans-serif; padding: 20px; max-width: 600px; margin: 0 auto; background-color: #f4f4f9; }
+        .box { background: white; padding: 15px; margin-bottom: 20px; border-radius: 8px; box-shadow: 0 2px 5px rgba(0,0,0,0.1); }
+        input { padding: 10px; width: 60%; border: 1px solid #ddd; border-radius: 4px; }
+        button { padding: 10px 15px; background: #007bff; color: white; border: none; border-radius: 4px; font-size: 16px; }
+        #logs { background: #333; color: #0f0; padding: 10px; font-family: monospace; font-size: 12px; height: 150px; overflow-y: scroll; border-radius: 5px; margin-top: 20px; }
+        .log-line { border-bottom: 1px solid #444; padding: 2px 0; }
+        .error { color: #ff5555; }
     </style>
 </head>
 <body>
 
-    <h2>P2P Чат (без сервера для данных)</h2>
+    <h2>P2P Чат (Версия для отладки)</h2>
 
     <div class="box">
-        <p>Ваш ID (отправьте другу):</p>
-        <h3 id="my-id">...получение ID...</h3>
-        <p id="status">Статус: Ожидание подключения к сети...</p>
+        <p>Ваш ID:</p>
+        <h3 id="my-id" style="color: blue;">Генерация...</h3>
+        <p id="status">Статус: Инициализация...</p>
     </div>
 
     <div class="box" id="connect-box">
-        <p>Вставьте ID друга:</p>
-        <input type="text" id="friend-id-input" placeholder="Например: 12345-abcde...">
-        <button onclick="connectToFriend()">Подключиться</button>
+        <input type="text" id="friend-id-input" placeholder="ID друга">
+        <button onclick="connectToFriend()">Соединить</button>
     </div>
 
-    <div id="chat-box" style="display:none;">
-        <div id="chat-area"></div>
-        <input type="text" id="msg-input" placeholder="Введите сообщение...">
-        <button onclick="sendMessage()">Отправить</button>
+    <div id="chat-box" class="box" style="display:none;">
+        <div id="chat-area" style="height: 200px; overflow-y: scroll; border: 1px solid #eee; margin-bottom: 10px; padding: 5px;"></div>
+        <input type="text" id="msg-input" placeholder="Сообщение...">
+        <button onclick="sendMessage()">Send</button>
     </div>
+
+    <div id="logs"></div>
 
     <script>
-        // Инициализация (используем бесплатный облачный сервер PeerJS только для "рукопожатия")
-        const peer = new Peer(); 
-        let conn; // Здесь будет храниться соединение
+        // Функция для вывода текста на экран телефона (вместо консоли)
+        function log(text, isError = false) {
+            const logsDiv = document.getElementById('logs');
+            const line = document.createElement('div');
+            line.className = 'log-line ' + (isError ? 'error' : '');
+            const time = new Date().toLocaleTimeString();
+            line.innerText = `[${time}] ${text}`;
+            logsDiv.appendChild(line);
+            logsDiv.scrollTop = logsDiv.scrollHeight;
+            console.log(text);
+        }
 
-        // 1. Когда мы получили свой ID от сети
+        log("Запуск скрипта...");
+
+        // Настройки соединения (Важно для мобильных!)
+        const peerConfig = {
+            debug: 2,
+            config: {
+                iceServers: [
+                    { urls: 'stun:stun.l.google.com:19302' },
+                    { urls: 'stun:global.stun.twilio.com:3478' }
+                ]
+            }
+        };
+
+        let peer;
+        try {
+            peer = new Peer(null, peerConfig);
+            log("Peer объект создан");
+        } catch (e) {
+            log("Ошибка создания Peer: " + e, true);
+        }
+
+        let conn;
+
+        // 1. Успешное подключение к серверу PeerJS
         peer.on('open', function(id) {
             document.getElementById('my-id').innerText = id;
-            document.getElementById('status').innerText = "Статус: Готов к соединению";
+            document.getElementById('status').innerText = "Готов (ID получен)";
+            log("Мой ID получен: " + id);
         });
 
-        // 2. Если К НАМ кто-то подключился
+        // 2. Ошибки
+        peer.on('error', function(err) {
+            log("CRITICAL ERROR: " + err.type, true);
+            alert("Ошибка: " + err.type);
+        });
+
+        peer.on('disconnected', function() {
+            log("Отключено от сервера сигнализации. Пробую переподключиться...", true);
+            peer.reconnect();
+        });
+
+        // 3. Входящее соединение
         peer.on('connection', function(c) {
+            log("Кто-то соединяется: " + c.peer);
             conn = c;
             setupConnection();
-            alert("Друг подключился к вам!");
         });
 
-        // 3. Если МЫ подключаемся к кому-то
+        // 4. Исходящее соединение
         function connectToFriend() {
             const friendId = document.getElementById('friend-id-input').value;
-            if (!friendId) return alert("Введите ID друга!");
-            
+            log("Пробую соединиться с: " + friendId);
             conn = peer.connect(friendId);
+            
+            // Если через 5 секунд не соединилось
+            setTimeout(() => {
+                if(!conn.open) log("Соединение идет долго... Возможно проблема с NAT", true);
+            }, 5000);
+
             setupConnection();
         }
 
-        // Настройка событий соединения (общая для обоих случаев)
         function setupConnection() {
-            // Скрываем меню подключения, показываем чат
-            document.getElementById('connect-box').style.display = 'none';
-            document.getElementById('chat-box').style.display = 'block';
-            document.getElementById('status').innerText = "Статус: Подключено напрямую!";
-
-            // Когда приходят данные
-            conn.on('data', function(data) {
-                addMessage(data, 'friend-msg');
+            conn.on('open', function(){
+                log("УРА! Прямое соединение установлено!");
+                document.getElementById('connect-box').style.display = 'none';
+                document.getElementById('chat-box').style.display = 'block';
+                document.getElementById('status').innerText = "Подключено к " + conn.peer;
             });
 
-            conn.on('open', function(){
-                console.log("Канал открыт");
+            conn.on('data', function(data) {
+                log("Пришло сообщение: " + data);
+                addMessage(data, 'friend');
+            });
+            
+            conn.on('error', function(err) {
+                log("Ошибка соединения: " + err, true);
+            });
+            
+            conn.on('close', function() {
+                log("Соединение закрыто", true);
+                alert("Собеседник отключился");
             });
         }
 
-        // Отправка сообщения
         function sendMessage() {
-            const msgInput = document.getElementById('msg-input');
-            const msg = msgInput.value;
-            if (!msg) return;
-
+            const input = document.getElementById('msg-input');
+            const msg = input.value;
             if (conn && conn.open) {
-                conn.send(msg); // Отправляем P2P
-                addMessage(msg, 'my-msg'); // Показываем у себя
-                msgInput.value = '';
+                conn.send(msg);
+                addMessage(msg, 'me');
+                input.value = '';
             } else {
-                alert("Соединение разорвано");
+                log("Не могу отправить: нет соединения", true);
             }
         }
 
-        // Функция рисования сообщения на экране
-        function addMessage(text, className) {
-            const chatArea = document.getElementById('chat-area');
+        function addMessage(text, who) {
+            const area = document.getElementById('chat-area');
             const div = document.createElement('div');
-            div.className = `message ${className}`;
-            div.innerText = text;
-            chatArea.appendChild(div);
-            chatArea.scrollTop = chatArea.scrollHeight; // Прокрутка вниз
+            div.innerText = (who === 'me' ? 'Я: ' : 'Друг: ') + text;
+            div.style.textAlign = who === 'me' ? 'right' : 'left';
+            div.style.color = who === 'me' ? 'green' : 'black';
+            area.appendChild(div);
         }
     </script>
 </body>
