@@ -3,23 +3,25 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>P2P Chat 3.1 Fix</title>
+    <title>P2P Chat 4.0 Sound</title>
     <script src="https://unpkg.com/peerjs@1.5.2/dist/peerjs.min.js"></script>
     <style>
         :root {
             --primary-gradient: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            --bg-color: #f4f6f9;
             --white: #ffffff;
             --text-dark: #2d3748;
             --text-light: #718096;
-            --shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+            --shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
         }
 
         * { box-sizing: border-box; outline: none; -webkit-tap-highlight-color: transparent; }
         
         body {
             font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
-            background-color: var(--bg-color);
+            /* КРАСИВЫЙ ФОН (УЗОР) */
+            background-color: #e5ddd5;
+            background-image: radial-gradient(#b0b3b5 1.5px, transparent 1.5px);
+            background-size: 20px 20px;
             margin: 0;
             height: 100vh;
             display: flex;
@@ -30,7 +32,9 @@
         .screen { padding: 20px; max-width: 500px; width: 100%; margin: 0 auto; flex-grow: 1; display: flex; flex-direction: column; justify-content: center; }
 
         .card {
-            background: var(--white); border-radius: 24px; padding: 25px; box-shadow: var(--shadow);
+            background: rgba(255, 255, 255, 0.95); /* Немного прозрачности */
+            backdrop-filter: blur(5px);
+            border-radius: 24px; padding: 25px; box-shadow: var(--shadow);
             text-align: center; margin-bottom: 20px;
         }
 
@@ -45,34 +49,35 @@
         input[type="text"]:focus { border-color: #667eea; background: #fff; }
 
         .btn-main {
-            width: 100%; padding: 16px; border: none; border-radius: 16px; background: var(--primary-gradient); color: white; font-size: 16px; font-weight: bold; cursor: pointer; margin-top: 10px; transition: 0.2s;
+            width: 100%; padding: 16px; border: none; border-radius: 16px; background: var(--primary-gradient); color: white; font-size: 16px; font-weight: bold; cursor: pointer; margin-top: 10px; transition: 0.2s; box-shadow: 0 4px 10px rgba(118, 75, 162, 0.3);
         }
         .btn-main:active { transform: scale(0.98); opacity: 0.9; }
-        .btn-main:disabled { background: #cbd5e0; cursor: not-allowed; transform: none; }
+        .btn-main:disabled { background: #cbd5e0; cursor: not-allowed; transform: none; box-shadow: none; }
 
         .btn-small { padding: 8px 15px; border-radius: 10px; background: #edf2f7; color: #4a5568; border: none; font-size: 13px; font-weight: 600; cursor: pointer; }
         
         .contact-list { list-style: none; padding: 0; margin: 10px 0; text-align: left; max-height: 150px; overflow-y: auto; }
         .contact-item { 
-            background: #f7fafc; padding: 12px; margin-bottom: 8px; border-radius: 12px; 
+            background: #fff; padding: 12px; margin-bottom: 8px; border-radius: 12px; 
             display: flex; justify-content: space-between; align-items: center; border: 1px solid #edf2f7; cursor: pointer;
         }
         .contact-name { font-weight: bold; color: #4a5568; font-size: 14px; }
         .contact-id { font-size: 11px; color: #a0aec0; }
         .delete-contact { color: #e53e3e; font-size: 18px; padding: 0 10px; cursor: pointer; }
 
-        #chat-screen { display: none; flex-direction: column; height: 100%; background: white; }
-        .chat-header { padding: 15px 20px; background: rgba(255,255,255,0.95); border-bottom: 1px solid #edf2f7; display: flex; align-items: center; justify-content: space-between; }
+        #chat-screen { display: none; flex-direction: column; height: 100%; background: transparent; }
+        .chat-header { padding: 15px 20px; background: rgba(255,255,255,0.95); border-bottom: 1px solid #edf2f7; display: flex; align-items: center; justify-content: space-between; box-shadow: 0 2px 5px rgba(0,0,0,0.05); }
         
-        #chat-area { flex-grow: 1; padding: 20px; overflow-y: auto; display: flex; flex-direction: column; background-color: #f4f6f9; }
+        #chat-area { flex-grow: 1; padding: 20px; overflow-y: auto; display: flex; flex-direction: column; }
         
         .message-row { display: flex; margin-bottom: 15px; width: 100%; }
         .message-row.me { justify-content: flex-end; }
-        .bubble { max-width: 75%; padding: 12px 16px; border-radius: 18px; font-size: 15px; box-shadow: 0 2px 4px rgba(0,0,0,0.05); }
+        
+        .bubble { max-width: 75%; padding: 12px 16px; border-radius: 18px; font-size: 15px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); position: relative; }
         .bubble.me { background: var(--primary-gradient); color: white; border-bottom-right-radius: 4px; }
         .bubble.friend { background: white; color: var(--text-dark); border-bottom-left-radius: 4px; }
         
-        .input-area { padding: 15px; background: white; border-top: 1px solid #edf2f7; display: flex; gap: 10px; }
+        .input-area { padding: 15px; background: white; border-top: 1px solid #edf2f7; display: flex; gap: 10px; box-shadow: 0 -2px 10px rgba(0,0,0,0.05); }
         #msg-input { flex-grow: 1; background: #f4f6f9; border: none; border-radius: 25px; padding: 12px 20px; }
         .send-btn { background: var(--primary-gradient); color: white; border: none; width: 45px; height: 45px; border-radius: 50%; cursor: pointer; display: flex; justify-content: center; align-items: center;}
 
@@ -93,7 +98,7 @@
             </div>
             <div class="input-group">
                 <span class="input-label">ПРИДУМАЙТЕ СЕБЕ ID</span>
-                <input type="text" id="my-custom-id" placeholder="Например: yura777">
+                <input type="text" id="my-custom-id" placeholder="Например: boss123">
             </div>
             <button class="btn-main" onclick="initializePeer()">Создать сеть 🌐</button>
         </div>
@@ -110,7 +115,7 @@
                 <span class="input-label">ПОДКЛЮЧИТЬСЯ К ДРУГУ</span>
                 <input type="text" id="friend-id-input" placeholder="Введите ID друга">
             </div>
-            <button id="connect-btn" class="btn-main" onclick="connectToFriend()">📞 Позвонить</button>
+            <button id="connect-btn" class="btn-main" onclick="connectToFriend()">🔗 Подключиться</button>
             
             <hr style="border: 0; border-top: 1px solid #eee; margin: 20px 0;">
             
@@ -146,6 +151,12 @@
         let myId = "";
         let currentFriendId = "";
 
+        // ЗВУКОВОЙ ФАЙЛ (Base64) - Короткий "Поп"
+        const notifSound = new Audio("data:audio/mp3;base64,//uQxAAAAANIAAAAAExBTUUzLjEwMKqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqq//uQxAAAAANIAAAAAExBTUUzLjEwMKqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqq//uQxAAAAANIAAAAAExBTUUzLjEwMKqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqq//uQxAAAAANIAAAAAExBTUUzLjEwMKqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqq//uQxAAAAANIAAAAAExBTUUzLjEwMKqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqq//uQxAAAAANIAAAAAExBTUUzLjEwMKqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqq//uQxAAAAANIAAAAAExBTUUzLjEwMKqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqq//uQxAAAAANIAAAAAExBTUUzLjEwMKqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqq//uQxAAAAANIAAAAAExBTUUzLjEwMKqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqq//uQxAAAAANIAAAAAExBTUUzLjEwMKqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqq//uQxAAAAANIAAAAAExBTUUzLjEwMKqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqq//uQxAAAAANIAAAAAExBTUUzLjEwMKqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqq//uQxAAAAANIAAAAAExBTUUzLjEwMKqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqq//uQxAAAAANIAAAAAExBTUUzLjEwMKqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqq//uQxAAAAANIAAAAAExBTUUzLjEwMKqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqq//uQxAAAAANIAAAAAExBTUUzLjEwMKqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqq//uQxAAAAANIAAAAAExBTUUzLjEwMKqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqq//uQxAAAAANIAAAAAExBTUUzLjEwMKqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqq//uQxAAAAANIAAAAAExBTUUzLjEwMKqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqq//uQxAAAAANIAAAAAExBTUUzLjEwMKqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqq//uQxAAAAANIAAAAAExBTUUzLjEwMKqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqq//uQxAAAAANIAAAAAExBTUUzLjEwMKqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqq//uQxAAAAANIAAAAAExBTUUzLjEwMKqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqq//uQxAAAAANIAAAAAExBTUUzLjEwMKqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqq//uQxAAAAANIAAAAAExBTUUzLjEwMKqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqq//uQxAAAAANIAAAAAExBTUUzLjEwMKqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqq//uQxAAAAANIAAAAAExBTUUzLjEwMKqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqq//uQxAAAAANIAAAAAExBTUUzLjEwMKqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqq//uQxAAAAANIAAAAAExBTUUzLjEwMKqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqq//uQxAAAAANIAAAAAExBTUUzLjEwMKqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqq//uQxAAAAANIAAAAAExBTUUzLjEwMKqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqq//uQxAAAAANIAAAAAExBTUUzLjEwMKqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqq//uQxAAAAANIAAAAAExBTUUzLjEwMKqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqq//uQxAAAAANIAAAAAExBTUUzLjEwMKqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqq//uQxAAAAANIAAAAAExBTUUzLjEwMKqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqq//uQxAAAAANIAAAAAExBTUUzLjEwMKqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqq//uQxAAAAANIAAAAAExBTUUzLjEwMKqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqq//uQxAAAAANIAAAAAExBTUUzLjEwMKqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqq//uQxAAAAANIAAAAAExBTUUzLjEwMKqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqq//uQxAAAAANIAAAAAExBTUUzLjEwMKqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqq//uQxAAAAANIAAAAAExBTUUzLjEwMKqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqq//uQxAAAAANIAAAAAExBTUUzLjEwMKqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqq//uQxAAAAANIAAAAAExBTUUzLjEwMKqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqq//uQxAAAAANIAAAAAExBTUUzLjEwMKqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqq//uQxAAAAANIAAAAAExBTUUzLjEwMKqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqq//uQxAAAAANIAAAAAExBTUUzLjEwMKqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqq//uQxAAAAANIAAAAAExBTUUzLjEwMKqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqq//uQxAAAAANIAAAAAExBTUUzLjEwMKqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqq//uQxAAAAANIAAAAAExBTUUzLjEwMKqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqq//uQxAAAAANIAAAAAExBTUUzLjEwMKqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqq//uQxAAAAANIAAAAAExBTUUzLjEwMKqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqq//uQxAAAAANIAAAAAExBTUUzLjEwMKqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqq//uQxAAAAANIAAAAAExBTUUzLjEwMKqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqq//uQxAAAAANIAAAAAExBTUUzLjEwMKqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqq//uQxAAAAANIAAAAAExBTUUzLjEwMKqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqq//uQxAAAAANIAAAAAExBTUUzLjEwMKqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqq//uQxAAAAANIAAAAAExBTUUzLjEwMKqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqq//uQxAAAAANIAAAAAExBTUUzLjEwMKqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqq//uQxAAAAANIAAAAAExBTUUzLjEwMKqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqq//uQxAAAAANIAAAAAExBTUUzLjEwMKqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqq//uQxAAAAANIAAAAAExBTUUzLjEwMKqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqq//uQxAAAAANIAAAAAExBTUUzLjEwMKqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqq//uQxAAAAANIAAAAAExBTUUzLjEwMKqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqq//uQxAAAAANIAAAAAExBTUUzLjEwMKqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqq//uQxAAAAANIAAAAAExBTUUzLjEwMKqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqq//uQxAAAAANIAAAAAExBTUUzLjEwMKqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqq//uQxAAAAANIAAAAAExBTUUzLjEwMKqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqq//uQxAAAAANIAAAAAExBTUUzLjEwMKqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqq//uQxAAAAANIAAAAAExBTUUzLjEwMKqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqq//uQxAAAAANIAAAAAExBTUUzLjEwMKqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqq");
+        
+        // Попытка разблокировать аудио при первом нажатии
+        document.body.addEventListener('click', () => { notifSound.play().catch(()=>{}); }, {once:true});
+
         window.onload = function() {
             const savedName = localStorage.getItem('myName');
             const savedId = localStorage.getItem('myCustomId');
@@ -156,7 +167,7 @@
 
         function initializePeer() {
             const name = document.getElementById('my-name-input').value.trim();
-            const customId = document.getElementById('my-custom-id').value.trim(); // Убираем пробелы
+            const customId = document.getElementById('my-custom-id').value.trim().replace(/\s/g, '');
             
             if (!name || !customId) return showToast("Заполните поля!");
             
@@ -192,22 +203,18 @@
         }
 
         function connectToFriend(savedId = null) {
-            // 1. Получаем ID и чистим от пробелов жестко
             const inputId = document.getElementById('friend-id-input').value.replace(/\s/g, ''); 
             const targetId = savedId || inputId;
 
-            // 2. Проверки
             if (!targetId) return showToast("Введите ID!");
             if (targetId === myId) return showToast("Это ваш собственный ID!");
             if (!peer || peer.disconnected) return showToast("Нет соединения с сервером!");
 
-            // 3. Визуальная реакция кнопки (ЧТОБЫ БЫЛО ВИДНО)
             const btn = document.getElementById('connect-btn');
             const originalText = btn.innerText;
             btn.innerText = "⌛ Поиск...";
             btn.disabled = true;
 
-            // 4. Запускаем соединение
             currentFriendId = targetId;
             try {
                 conn = peer.connect(targetId);
@@ -217,23 +224,20 @@
                 return;
             }
 
-            // 5. Таймер: если через 5 секунд не подключилось - сброс
             const timeout = setTimeout(() => {
                 if (!conn || !conn.open) {
                     resetConnectBtn(btn, originalText);
-                    showToast("Не удалось подключиться. Проверьте ID.");
+                    showToast("Не удалось подключиться.");
                     conn.close();
                 }
             }, 5000);
 
-            // 6. Если подключилось успешно
             conn.on('open', function() {
                 clearTimeout(timeout);
                 resetConnectBtn(btn, originalText);
                 setupUIForChat();
             });
 
-            // Ловим ошибки конкретного соединения
             conn.on('error', function(err) {
                 clearTimeout(timeout);
                 resetConnectBtn(btn, originalText);
@@ -253,7 +257,12 @@
                setupUIForChat();
             });
             conn.on('data', function(data) {
-                if (typeof data === 'object') addMessage(data.text, 'friend', data.name);
+                if (typeof data === 'object') {
+                    addMessage(data.text, 'friend', data.name);
+                    // ИГРАЕМ ЗВУК ПРИ ВХОДЯЩЕМ
+                    notifSound.currentTime = 0;
+                    notifSound.play().catch(e => console.log("Audio block", e));
+                }
             });
             conn.on('close', () => {
                 showToast("Собеседник вышел");
@@ -265,12 +274,11 @@
             document.getElementById('connect-screen').style.display = 'none';
             document.getElementById('chat-screen').style.display = 'flex';
             document.getElementById('chat-title').innerText = currentFriendId;
-            // Если входящее
             if(conn.peer) currentFriendId = conn.peer;
             document.getElementById('chat-title').innerText = currentFriendId;
         }
 
-        // Остальные функции без изменений
+        // Остальные функции (контакты и т.д.)
         function saveCurrentContact() {
             if (!currentFriendId) return;
             const name = prompt("Имя контакта?", currentFriendId);
