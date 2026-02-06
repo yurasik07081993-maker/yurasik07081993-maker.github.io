@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>P2P Chat 5.0 Stable Sound</title>
+    <title>P2P Chat 6.0 Voice</title>
     <script src="https://unpkg.com/peerjs@1.5.2/dist/peerjs.min.js"></script>
     <style>
         :root {
@@ -72,13 +72,28 @@
         .message-row { display: flex; margin-bottom: 15px; width: 100%; }
         .message-row.me { justify-content: flex-end; }
         
-        .bubble { max-width: 75%; padding: 12px 16px; border-radius: 18px; font-size: 15px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); position: relative; }
+        .bubble { max-width: 85%; padding: 12px 16px; border-radius: 18px; font-size: 15px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); position: relative; }
         .bubble.me { background: var(--primary-gradient); color: white; border-bottom-right-radius: 4px; }
         .bubble.friend { background: white; color: var(--text-dark); border-bottom-left-radius: 4px; }
         
-        .input-area { padding: 15px; background: white; border-top: 1px solid #edf2f7; display: flex; gap: 10px; box-shadow: 0 -2px 10px rgba(0,0,0,0.05); }
+        /* СТИЛИ ДЛЯ АУДИО */
+        audio { height: 35px; width: 200px; margin-top: 5px; outline: none; }
+        .bubble.me audio { filter: invert(1); } /* Делаем плеер белым на темном фоне */
+
+        .input-area { padding: 15px; background: white; border-top: 1px solid #edf2f7; display: flex; gap: 10px; align-items: center; box-shadow: 0 -2px 10px rgba(0,0,0,0.05); }
         #msg-input { flex-grow: 1; background: #f4f6f9; border: none; border-radius: 25px; padding: 12px 20px; }
-        .send-btn { background: var(--primary-gradient); color: white; border: none; width: 45px; height: 45px; border-radius: 50%; cursor: pointer; display: flex; justify-content: center; align-items: center;}
+        
+        .send-btn { background: var(--primary-gradient); color: white; border: none; width: 45px; height: 45px; border-radius: 50%; cursor: pointer; display: flex; justify-content: center; align-items: center; flex-shrink: 0; }
+        
+        /* КНОПКА МИКРОФОНА */
+        #mic-btn { 
+            width: 45px; height: 45px; border-radius: 50%; border: none; cursor: pointer; flex-shrink: 0;
+            background: #edf2f7; color: #4a5568; font-size: 20px; display: flex; justify-content: center; align-items: center;
+        }
+        #mic-btn.recording {
+            background: #e53e3e; color: white; animation: pulse 1.5s infinite;
+        }
+        @keyframes pulse { 0% { transform: scale(1); } 50% { transform: scale(1.1); } 100% { transform: scale(1); } }
 
         .toast { position: fixed; top: 20px; left: 50%; transform: translateX(-50%); background: #2d3748; color: white; padding: 10px 20px; border-radius: 30px; font-size: 14px; opacity: 0; transition: opacity 0.3s; pointer-events: none; z-index: 100; }
         .toast.show { opacity: 1; }
@@ -87,7 +102,6 @@
 <body>
 
     <div id="toast" class="toast">Уведомление</div>
-
     <audio id="msgSound" src="https://assets.mixkit.co/active_storage/sfx/2869/2869-preview.mp3" preload="auto"></audio>
 
     <div id="login-screen" class="screen">
@@ -98,7 +112,7 @@
                 <input type="text" id="my-name-input" placeholder="Имя">
             </div>
             <div class="input-group">
-                <span class="input-label">ПРИДУМАЙТЕ СЕБЕ ID</span>
+                <span class="input-label">ПРИДУМАЙТЕ ID</span>
                 <input type="text" id="my-custom-id" placeholder="Например: boss123">
             </div>
             <button class="btn-main" onclick="initializePeer()">Создать сеть 🌐</button>
@@ -110,20 +124,14 @@
             <h2 id="display-my-id">...</h2>
             <button class="btn-small" onclick="shareId()">📤 Отправить ID</button>
         </div>
-
         <div class="card">
             <div class="input-group">
                 <span class="input-label">ПОДКЛЮЧИТЬСЯ К ДРУГУ</span>
                 <input type="text" id="friend-id-input" placeholder="Введите ID друга">
             </div>
             <button id="connect-btn" class="btn-main" onclick="connectToFriend()">🔗 Подключиться</button>
-            
             <hr style="border: 0; border-top: 1px solid #eee; margin: 20px 0;">
-            
-            <span class="input-label">КОНТАКТЫ</span>
-            <ul id="contacts-list" class="contact-list">
-                <li style="text-align: center; color: #cbd5e0; font-size: 12px;">Нет контактов</li>
-            </ul>
+            <ul id="contacts-list" class="contact-list"></ul>
         </div>
     </div>
 
@@ -134,12 +142,14 @@
                 <div id="status-text" style="font-size: 10px; color: #48bb78;">Онлайн</div>
             </div>
             <div style="display: flex; gap: 10px;">
-                <button class="btn-small" onclick="saveCurrentContact()">💾 Сохр.</button>
+                <button class="btn-small" onclick="saveCurrentContact()">💾</button>
                 <button class="btn-small" style="color: #e53e3e;" onclick="location.reload()">Выйти</button>
             </div>
         </div>
         <div id="chat-area"></div>
         <div class="input-area">
+            <button id="mic-btn" onclick="toggleRecording()">🎤</button>
+            
             <input type="text" id="msg-input" placeholder="Сообщение..." onkeypress="handleEnter(event)">
             <button class="send-btn" onclick="sendMessage()">➤</button>
         </div>
@@ -147,34 +157,62 @@
 
     <script>
         const peerConfig = { host: '0.peerjs.com', port: 443, secure: true, path: '/', debug: 1 };
-        let peer;
-        let conn;
-        let myId = "";
-        let currentFriendId = "";
+        let peer, conn, myId = "", currentFriendId = "";
+        let mediaRecorder, audioChunks = [];
 
-        // === ИСПРАВЛЕНИЕ ЗВУКА ===
-        // 1. При любом нажатии на экран мы "разблокируем" звук (играем его тихо)
+        // --- РАБОТА СО ЗВУКОМ ---
         document.addEventListener('click', function() {
             const audio = document.getElementById('msgSound');
-            // Если звук еще не играл, включаем его на 0 громкости и сразу паузу
-            // Это обманывает Android, заставляя его думать, что звук включил человек
-            if (audio.paused) {
-                audio.volume = 0.0; // Тихо
-                audio.play().then(() => {
-                    audio.pause();
-                    audio.volume = 1.0; // Возвращаем громкость
-                    audio.currentTime = 0;
-                }).catch(e => console.log("Audio unlock failed yet"));
-            }
-        }, { once: true }); // Делаем это только 1 раз при старте
+            if (audio.paused) { audio.volume = 0.0; audio.play().then(() => { audio.pause(); audio.volume = 1.0; audio.currentTime = 0; }).catch(e=>{}); }
+        }, { once: true });
 
-        function playSound() {
-            const audio = document.getElementById('msgSound');
-            audio.volume = 1.0;
-            audio.currentTime = 0;
-            audio.play().catch(e => console.log("Звук заблокирован: ", e));
+        function playSound() { document.getElementById('msgSound').play().catch(e=>{}); }
+
+        // --- ЗАПИСЬ ГОЛОСА ---
+        async function toggleRecording() {
+            const btn = document.getElementById('mic-btn');
+            
+            if (!mediaRecorder || mediaRecorder.state === "inactive") {
+                // СТАРТ ЗАПИСИ
+                try {
+                    const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+                    mediaRecorder = new MediaRecorder(stream);
+                    audioChunks = [];
+                    
+                    mediaRecorder.ondataavailable = event => audioChunks.push(event.data);
+                    
+                    mediaRecorder.onstop = () => {
+                        const audioBlob = new Blob(audioChunks, { type: 'audio/webm' });
+                        sendVoiceMessage(audioBlob);
+                    };
+
+                    mediaRecorder.start();
+                    btn.classList.add('recording');
+                } catch (err) {
+                    showToast("Ошибка микрофона: " + err.message);
+                }
+            } else {
+                // СТОП ЗАПИСИ
+                mediaRecorder.stop();
+                btn.classList.remove('recording');
+            }
         }
 
+        function sendVoiceMessage(blob) {
+            const reader = new FileReader();
+            reader.readAsDataURL(blob);
+            reader.onloadend = function() {
+                const base64data = reader.result;
+                const myName = document.getElementById('my-name-input').value;
+                
+                if (conn && conn.open) {
+                    conn.send({ type: 'voice', name: myName, data: base64data });
+                    addVoiceToChat(base64data, 'me', myName);
+                }
+            }
+        }
+
+        // --- СТАНДАРТНЫЕ ФУНКЦИИ ---
         window.onload = function() {
             const savedName = localStorage.getItem('myName');
             const savedId = localStorage.getItem('myCustomId');
@@ -186,19 +224,13 @@
         function initializePeer() {
             const name = document.getElementById('my-name-input').value.trim();
             const customId = document.getElementById('my-custom-id').value.trim().replace(/\s/g, '');
-            
             if (!name || !customId) return showToast("Заполните поля!");
             
             localStorage.setItem('myName', name);
             localStorage.setItem('myCustomId', customId);
+            document.querySelector('#login-screen .btn-main').innerText = "Вход...";
 
-            const btn = document.querySelector('#login-screen .btn-main');
-            btn.innerText = "Вход...";
-            btn.disabled = true;
-
-            try {
-                peer = new Peer(customId, peerConfig);
-            } catch (e) { console.error(e); }
+            try { peer = new Peer(customId, peerConfig); } catch (e) { }
 
             peer.on('open', function(id) {
                 myId = id;
@@ -206,95 +238,79 @@
                 document.getElementById('connect-screen').style.display = 'flex';
                 document.getElementById('display-my-id').innerText = id;
             });
-
-            peer.on('error', function(err) {
-                btn.innerText = "Создать сеть 🌐";
-                btn.disabled = false;
-                if(err.type === 'unavailable-id') alert("ID занят! Попробуйте другой.");
-                else alert("Ошибка сети. Включите VPN.");
-            });
-
-            peer.on('connection', function(c) {
-                conn = c;
-                setupConnection();
-            });
+            peer.on('error', err => { showToast("Ошибка ID или сети"); document.querySelector('#login-screen .btn-main').innerText = "Создать сеть 🌐"; });
+            peer.on('connection', c => { conn = c; setupConnection(); });
         }
 
         function connectToFriend(savedId = null) {
             const inputId = document.getElementById('friend-id-input').value.replace(/\s/g, ''); 
             const targetId = savedId || inputId;
-
             if (!targetId) return showToast("Введите ID!");
-            if (targetId === myId) return showToast("Это ваш ID!");
-            if (!peer || peer.disconnected) return showToast("Нет соединения!");
-
+            
             const btn = document.getElementById('connect-btn');
-            const originalText = btn.innerText;
-            btn.innerText = "⌛ Поиск...";
-            btn.disabled = true;
+            btn.innerText = "⌛ Поиск..."; btn.disabled = true;
 
             currentFriendId = targetId;
-            try {
-                conn = peer.connect(targetId);
-            } catch(e) {
-                resetConnectBtn(btn, originalText);
-                showToast("Ошибка: " + e);
-                return;
-            }
+            try { conn = peer.connect(targetId); } catch(e) {}
+            
+            setTimeout(() => { if (!conn || !conn.open) { btn.innerText = "🔗 Подключиться"; btn.disabled = false; showToast("Не удалось подключиться"); } }, 5000);
 
-            const timeout = setTimeout(() => {
-                if (!conn || !conn.open) {
-                    resetConnectBtn(btn, originalText);
-                    showToast("Не удалось подключиться.");
-                    conn.close();
-                }
-            }, 5000);
-
-            conn.on('open', function() {
-                clearTimeout(timeout);
-                resetConnectBtn(btn, originalText);
-                setupUIForChat();
-            });
-
-            conn.on('error', function(err) {
-                clearTimeout(timeout);
-                resetConnectBtn(btn, originalText);
-                showToast("Ошибка связи");
-            });
-
+            conn.on('open', () => { btn.innerText = "🔗 Подключиться"; btn.disabled = false; setupUIForChat(); });
             setupConnection();
         }
 
-        function resetConnectBtn(btn, text) {
-            btn.innerText = text;
-            btn.disabled = false;
-        }
-
         function setupConnection() {
-            conn.on('open', function() {
-               setupUIForChat();
-            });
+            conn.on('open', () => setupUIForChat());
             conn.on('data', function(data) {
-                if (typeof data === 'object') {
+                if (data.type === 'voice') {
+                    addVoiceToChat(data.data, 'friend', data.name);
+                    playSound();
+                } else if (data.text) {
                     addMessage(data.text, 'friend', data.name);
-                    // ВОСПРОИЗВОДИМ ЗВУК
                     playSound();
                 }
             });
-            conn.on('close', () => {
-                showToast("Собеседник вышел");
-                setTimeout(() => location.reload(), 2000);
-            });
+            conn.on('close', () => { showToast("Собеседник вышел"); setTimeout(() => location.reload(), 2000); });
         }
 
         function setupUIForChat() {
             document.getElementById('connect-screen').style.display = 'none';
             document.getElementById('chat-screen').style.display = 'flex';
-            document.getElementById('chat-title').innerText = currentFriendId;
             if(conn.peer) currentFriendId = conn.peer;
             document.getElementById('chat-title').innerText = currentFriendId;
         }
 
+        function sendMessage() {
+            const input = document.getElementById('msg-input');
+            const text = input.value.trim();
+            const myName = document.getElementById('my-name-input').value;
+            if (!text) return;
+            if (conn && conn.open) {
+                conn.send({ text: text, name: myName });
+                addMessage(text, 'me', myName);
+                input.value = '';
+            } else { showToast("Нет соединения!"); }
+        }
+
+        function addMessage(text, type, senderName) {
+            const chatArea = document.getElementById('chat-area');
+            const row = document.createElement('div');
+            row.className = `message-row ${type}`;
+            row.innerHTML = `<div class="bubble ${type}">${text}</div>`;
+            chatArea.appendChild(row);
+            chatArea.scrollTop = chatArea.scrollHeight;
+        }
+
+        function addVoiceToChat(base64, type, senderName) {
+            const chatArea = document.getElementById('chat-area');
+            const row = document.createElement('div');
+            row.className = `message-row ${type}`;
+            row.innerHTML = `<div class="bubble ${type}">🎤 Голосовое<br><audio controls src="${base64}"></audio></div>`;
+            chatArea.appendChild(row);
+            chatArea.scrollTop = chatArea.scrollHeight;
+        }
+
+        // --- КОНТАКТЫ ---
         function saveCurrentContact() {
             if (!currentFriendId) return;
             const name = prompt("Имя контакта?", currentFriendId);
@@ -306,75 +322,25 @@
                 renderContacts();
             }
         }
-
         function renderContacts() {
             const list = document.getElementById('contacts-list');
             const contacts = JSON.parse(localStorage.getItem('myContacts') || "[]");
-            if (contacts.length === 0) return;
             list.innerHTML = "";
             contacts.forEach((c, index) => {
                 const li = document.createElement('li');
                 li.className = 'contact-item';
-                li.innerHTML = `
-                    <div onclick="connectToFriend('${c.id}')" style="width: 100%">
-                        <div class="contact-name">${c.name}</div>
-                        <div class="contact-id">${c.id}</div>
-                    </div>
-                    <div class="delete-contact" onclick="deleteContact(${index})">×</div>
-                `;
+                li.innerHTML = `<div onclick="connectToFriend('${c.id}')" style="width:100%"><div class="contact-name">${c.name}</div><div class="contact-id">${c.id}</div></div><div class="delete-contact" onclick="deleteContact(${index})">×</div>`;
                 list.appendChild(li);
             });
         }
-
-        function deleteContact(index) {
+        function deleteContact(i) {
             let contacts = JSON.parse(localStorage.getItem('myContacts') || "[]");
-            contacts.splice(index, 1);
-            localStorage.setItem('myContacts', JSON.stringify(contacts));
-            renderContacts();
-        }
-
-        function sendMessage() {
-            const input = document.getElementById('msg-input');
-            const text = input.value.trim();
-            const myName = document.getElementById('my-name-input').value;
-            if (!text) return;
-            if (conn && conn.open) {
-                conn.send({ name: myName, text: text });
-                addMessage(text, 'me', myName);
-                input.value = '';
-            } else { showToast("Нет соединения!"); }
-        }
-
-        function addMessage(text, type, senderName) {
-            const chatArea = document.getElementById('chat-area');
-            const row = document.createElement('div');
-            row.className = `message-row ${type}`;
-            const bubble = document.createElement('div');
-            bubble.className = `bubble ${type}`;
-            bubble.innerText = text;
-            row.appendChild(bubble);
-            chatArea.appendChild(row);
-            chatArea.scrollTop = chatArea.scrollHeight;
+            contacts.splice(i, 1); localStorage.setItem('myContacts', JSON.stringify(contacts)); renderContacts();
         }
 
         function handleEnter(e) { if (e.key === 'Enter') sendMessage(); }
-
-        function shareId() {
-            const text = `Мой ID: ${myId}`;
-            if (navigator.share) {
-                navigator.share({ title: 'Chat ID', text: text });
-            } else {
-                navigator.clipboard.writeText(myId);
-                showToast("Скопировано!");
-            }
-        }
-
-        function showToast(msg) {
-            const toast = document.getElementById('toast');
-            toast.innerText = msg;
-            toast.classList.add('show');
-            setTimeout(() => toast.classList.remove('show'), 3000);
-        }
+        function shareId() { navigator.clipboard.writeText(myId); showToast("Скопировано!"); }
+        function showToast(msg) { const t = document.getElementById('toast'); t.innerText = msg; t.classList.add('show'); setTimeout(()=>t.classList.remove('show'), 3000); }
     </script>
 </body>
 </html>
