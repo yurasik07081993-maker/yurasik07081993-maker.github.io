@@ -5,28 +5,64 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
     <title>Mess AI</title>
     <style>
-        body { margin: 0; background: #000; display: flex; align-items: center; justify-content: center; height: 100dvh; overflow: hidden; }
+        body { 
+            margin: 0; 
+            background: #000; 
+            display: flex; 
+            align-items: center; 
+            justify-content: center; 
+            height: 100dvh; 
+            overflow: hidden;
+            /* Убираем синие/серые квадраты при нажатии на мобилках */
+            -webkit-tap-highlight-color: transparent;
+        }
+        
         .ai-orb {
-            width: 260px; height: 260px; border-radius: 50%;
+            width: 260px; 
+            height: 260px; 
+            border-radius: 50%;
             background: radial-gradient(circle at 35% 35%, #007AFF, #000);
             box-shadow: 0 0 30px rgba(0, 122, 255, 0.2);
             transition: all 0.3s ease;
             animation: breathe 4s ease-in-out infinite;
             cursor: pointer;
+            z-index: 100;
+            /* Защита от выделения текста */
+            -webkit-user-select: none;
+            user-select: none;
         }
-        .ai-orb.listening { background: radial-gradient(circle at 35% 35%, #34C759, #000); box-shadow: 0 0 60px rgba(52, 199, 89, 0.4); transform: scale(1.05); }
-        .ai-orb.active { background: radial-gradient(circle at 35% 35%, #007AFF, #050505); box-shadow: 0 0 100px rgba(0, 122, 255, 0.6); transform: scale(1.1); }
+
+        .ai-orb.listening { 
+            background: radial-gradient(circle at 35% 35%, #34C759, #000); 
+            box-shadow: 0 0 60px rgba(52, 199, 89, 0.4); 
+            transform: scale(1.05); 
+        }
+
+        .ai-orb.active { 
+            background: radial-gradient(circle at 35% 35%, #007AFF, #050505); 
+            box-shadow: 0 0 100px rgba(0, 122, 255, 0.6); 
+            transform: scale(1.1); 
+        }
+
         .exit-btn {
             position: absolute; top: 50px; left: 20px;
-            color: rgba(255,255,255,0.4); font-family: sans-serif; text-decoration: none; font-size: 14px; 
-            border: 1px solid rgba(255,255,255,0.1); padding: 10px 20px; border-radius: 25px; z-index: 10;
+            color: rgba(255,255,255,0.4); font-family: sans-serif; 
+            text-decoration: none; font-size: 14px; 
+            border: 1px solid rgba(255,255,255,0.1); 
+            padding: 10px 20px; border-radius: 25px; 
+            z-index: 200;
         }
-        @keyframes breathe { 0%, 100% { transform: scale(1); } 50% { transform: scale(1.02); } }
+
+        @keyframes breathe { 
+            0%, 100% { transform: scale(1); } 
+            50% { transform: scale(1.02); } 
+        }
     </style>
 </head>
 <body>
     <a href="#" class="exit-btn" onclick="stopEverything(); window.parent.postMessage('closeAI', '*')">← Mess</a>
-    <div id="ai-orb" class="ai-orb" onclick="toggleAssistant()"></div>
+    
+    <div id="ai-orb" class="ai-orb" onclick="toggleAssistant()" ontouchstart="handleTouch(event)"></div>
 
     <script>
         const MY_SECRET_KEY = "sk-81d2d12031e243519fcfa3147b040c9b";
@@ -35,7 +71,7 @@
         let isAssistantActive = false;
         let isSpeaking = false;
         
-        let chatHistory = [{ role: "system", content: "Ты — помощник Mess. Отвечай кратко, 1 фраза. Без спецсимволов." }];
+        let chatHistory = [{ role: "system", content: "Ты помощник Mess. Отвечай кратко, 1 фраза. Без спецсимволов." }];
 
         if ('SpeechRecognition' in window || 'webkitSpeechRecognition' in window) {
             const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
@@ -54,9 +90,7 @@
             };
 
             recognition.onend = () => {
-                // Если выключили вручную — ничего не делаем
                 if (!isAssistantActive) return;
-                // Если не говорим — перезапуск через паузу
                 if (!isSpeaking) {
                     setTimeout(() => { if(isAssistantActive) startListening(); }, 400);
                 }
@@ -73,10 +107,7 @@
                 const response = await fetch('https://api.deepseek.com/chat/completions', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${MY_SECRET_KEY}` },
-                    body: JSON.stringify({
-                        model: "deepseek-chat",
-                        messages: chatHistory
-                    })
+                    body: JSON.stringify({ model: "deepseek-chat", messages: chatHistory })
                 });
                 const data = await response.json();
                 let answer = data.choices[0].message.content.replace(/[*\(\)_"']/g, '');
@@ -116,19 +147,19 @@
             orb.className = 'ai-orb';
         }
 
+        function handleTouch(e) {
+            e.preventDefault(); // Запрещаем системный квадрат и зум
+            toggleAssistant();
+        }
+
         function toggleAssistant() {
             if (isAssistantActive) {
                 stopEverything();
             } else {
-                // Включаем
                 isAssistantActive = true;
-                isSpeaking = false; // Сбрасываем флаг принудительно
+                isSpeaking = false;
                 orb.className = 'ai-orb listening';
-                
-                // Прогрев аудио
                 window.speechSynthesis.speak(new SpeechSynthesisUtterance(''));
-                
-                // Даем 100мс на «прогрев» и запускаем
                 setTimeout(startListening, 100);
             }
         }
