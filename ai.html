@@ -2,173 +2,164 @@
 <html lang="ru">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>AI Assistant - Auto Mode</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="mobile-web-app-capable" content="yes">
+    
+    <title>AI Voice</title>
     <style>
-        :root {
-            --bg-app: #1C1C1E;
-            --blue-accent: #007AFF;
-            --text-white: #FFFFFF;
-            --text-gray: #AEAEB2;
+        * {
+            box-sizing: border-box;
+            -webkit-tap-highlight-color: transparent;
         }
 
         body {
             margin: 0; padding: 0;
-            background-color: var(--bg-app);
-            font-family: -apple-system, sans-serif;
-            color: var(--text-white);
-            display: flex; flex-direction: column;
-            align-items: center; justify-content: center;
-            height: 100dvh;
+            background-color: #000;
+            display: flex; align-items: center; justify-content: center;
+            height: 100vh; height: 100dvh;
             overflow: hidden;
         }
 
+        /* Анимированная сфера */
         .ai-orb {
-            width: 180px; height: 180px;
+            width: 220px;
+            height: 220px;
             border-radius: 50%;
-            background: linear-gradient(135deg, #007AFF, #0051FF);
-            box-shadow: 0 0 50px rgba(0, 122, 255, 0.4);
-            transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+            background: radial-gradient(circle at 35% 35%, #007AFF, #000);
+            box-shadow: 0 0 40px rgba(0, 122, 255, 0.2);
             cursor: pointer;
-            margin-bottom: 40px;
+            transition: background 0.8s ease, box-shadow 0.8s ease, transform 0.5s ease;
+            animation: breathe 5s ease-in-out infinite;
         }
 
-        .ai-orb.listening { transform: scale(1.1); box-shadow: 0 0 70px rgba(52, 199, 89, 0.6); background: linear-gradient(135deg, #34C759, #30B753); }
-        .ai-orb.thinking { transform: scale(0.9); filter: grayscale(1); animation: aiSpin 2s linear infinite; }
-        .ai-orb.speaking { transform: scale(1.2); box-shadow: 0 0 90px rgba(0, 122, 255, 0.8); }
+        /* Состояние: Слушает */
+        .ai-orb.listening {
+            background: radial-gradient(circle at 35% 35%, #34C759, #000);
+            box-shadow: 0 0 60px rgba(52, 199, 89, 0.4);
+            animation: breathe 2s ease-in-out infinite;
+        }
 
-        @keyframes aiSpin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
+        /* Состояние: Думает / Говорит */
+        .ai-orb.active {
+            transform: scale(1.1);
+            background: radial-gradient(circle at 35% 35%, #007AFF, #050505);
+            box-shadow: 0 0 100px rgba(0, 122, 255, 0.6);
+            animation: breathe 1s ease-in-out infinite;
+        }
 
-        .status-text { font-size: 14px; font-weight: 600; text-transform: uppercase; letter-spacing: 2px; color: var(--text-gray); margin-bottom: 20px; }
-        .transcript-text { font-size: 22px; text-align: center; max-width: 85%; min-height: 60px; color: #fff; line-height: 1.4; font-weight: 300; }
-        
-        /* Скрытый инпут с ключом */
-        #api-key { display: none; }
+        @keyframes breathe {
+            0%, 100% { transform: scale(1); opacity: 0.8; }
+            50% { transform: scale(1.08); opacity: 1; }
+        }
     </style>
 </head>
 <body>
 
-    <input type="text" id="api-key" value="sk-81d2d12031e243519fcfa3147b040c9b">
-
-    <div id="ai-orb" class="ai-orb" onclick="toggleAssistant()"></div>
-    <div id="ai-status" class="status-text">Нажми чтобы начать</div>
-    <div id="ai-transcript" class="transcript-text">Я тебя слушаю</div>
+    <div id="ai-orb" class="ai-orb"></div>
 
     <script>
+        const DEEPSEEK_KEY = "sk-81d2d12031e243519fcfa3147b040c9b";
         const orb = document.getElementById('ai-orb');
-        const statusText = document.getElementById('ai-status');
-        const transcriptText = document.getElementById('ai-transcript');
-        const apiKey = document.getElementById('api-key').value;
 
         let recognition = null;
         let isAssistantActive = false;
 
+        // Инициализация распознавания
         if ('SpeechRecognition' in window || 'webkitSpeechRecognition' in window) {
             const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
             recognition = new SpeechRecognition();
             recognition.lang = 'ru-RU';
             recognition.interimResults = false;
-            recognition.continuous = false;
 
-            recognition.onstart = () => {
-                if (!isAssistantActive) return;
-                setVisualState('listening', 'Слушаю...');
-            };
-
+            recognition.onstart = () => { if(isAssistantActive) orb.className = 'ai-orb listening'; };
+            
             recognition.onresult = async (event) => {
-                if (!isAssistantActive) return;
+                if(!isAssistantActive) return;
                 const text = event.results[0][0].transcript;
-                transcriptText.innerText = text;
                 await askDeepSeek(text);
             };
 
-            recognition.onerror = (event) => {
-                if (event.error === 'no-speech' && isAssistantActive) {
-                    // Если тишина, просто перезапускаем через мгновение
-                    setTimeout(() => startListening(), 100);
-                }
-            };
-
             recognition.onend = () => {
-                // Авто-перезапуск, если мы в режиме ожидания ответа пользователя
-                if (isAssistantActive && statusText.innerText === 'Слушаю...') {
+                if (isAssistantActive && !window.speechSynthesis.speaking) {
                     startListening();
                 }
             };
         }
 
-        function toggleAssistant() {
-            if (isAssistantActive) {
-                isAssistantActive = false;
-                window.speechSynthesis.cancel();
-                try { recognition.stop(); } catch(e) {}
-                setVisualState('idle', 'Нажми чтобы начать');
-                transcriptText.innerText = "Диалог окончен";
-            } else {
-                isAssistantActive = true;
-                // Разблокировка аудио для iOS/Android
-                const utter = new SpeechSynthesisUtterance('');
-                window.speechSynthesis.speak(utter);
-                startListening();
-            }
-        }
-
-        function startListening() {
-            if (!isAssistantActive) return;
-            try { 
-                recognition.start(); 
-                setVisualState('listening', 'Слушаю...');
-            } catch(e) {}
-        }
-
         async function askDeepSeek(userText) {
-            setVisualState('thinking', 'Думаю...');
+            orb.className = 'ai-orb active';
             try {
                 const response = await fetch('https://api.deepseek.com/chat/completions', {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json',
-                        'Authorization': `Bearer ${apiKey}`
+                        'Authorization': `Bearer ${DEEPSEEK_KEY}`
                     },
                     body: JSON.stringify({
                         model: "deepseek-chat",
                         messages: [
-                            { role: "system", content: "Ты краткий ассистент. Отвечай только на русском, 1-2 предложения." },
+                            { role: "system", content: "Ты лаконичный ассистент. Отвечай коротко (1-2 фразы) на русском." },
                             { role: "user", content: userText }
                         ]
                     })
                 });
-
                 const data = await response.json();
-                const answer = data.choices[0].message.content;
-                speak(answer);
-
-            } catch (error) {
-                startListening();
+                speak(data.choices[0].message.content);
+            } catch (e) {
+                if(isAssistantActive) startListening();
             }
         }
 
         function speak(text) {
-            if (!isAssistantActive) return;
-            transcriptText.innerText = text;
-            
             const utter = new SpeechSynthesisUtterance(text);
             utter.lang = 'ru-RU';
-            
-            utter.onstart = () => setVisualState('speaking', 'Говорю...');
+            utter.onstart = () => orb.className = 'ai-orb active';
             utter.onend = () => {
-                if (isAssistantActive) {
-                    setTimeout(() => startListening(), 400); // Пауза перед тем как снова начать слушать
-                }
+                if (isAssistantActive) setTimeout(startListening, 300);
             };
-            
             window.speechSynthesis.speak(utter);
         }
 
-        function setVisualState(state, text) {
-            orb.className = 'ai-orb ' + (state === 'idle' ? '' : state);
-            statusText.innerText = text;
+        function startListening() {
+            if (!isAssistantActive) return;
+            try { recognition.start(); } catch(e) {}
         }
+
+        // Функция полноэкранного режима
+        function openFullscreen() {
+            const elem = document.documentElement;
+            if (elem.requestFullscreen) {
+                elem.requestFullscreen();
+            } else if (elem.webkitRequestFullscreen) { /* Safari */
+                elem.webkitRequestFullscreen();
+            } else if (elem.msRequestFullscreen) { /* IE11 */
+                elem.msRequestFullscreen();
+            }
+        }
+
+        function toggle() {
+            if (isAssistantActive) {
+                isAssistantActive = false;
+                window.speechSynthesis.cancel();
+                recognition.stop();
+                orb.className = 'ai-orb';
+            } else {
+                openFullscreen(); // Переход в полный экран при включении
+                isAssistantActive = true;
+                window.speechSynthesis.speak(new SpeechSynthesisUtterance(''));
+                startListening();
+            }
+        }
+
+        // Слушатели событий
+        orb.addEventListener('click', toggle);
+        orb.addEventListener('touchstart', (e) => {
+            e.preventDefault();
+            toggle();
+        });
     </script>
 </body>
 </html>
