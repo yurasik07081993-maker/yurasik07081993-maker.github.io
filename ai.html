@@ -13,8 +13,9 @@
             justify-content: center; 
             height: 100dvh; 
             overflow: hidden;
-            /* Убираем синие/серые квадраты при нажатии на мобилках */
+            /* Убираем синие/серые квадраты при нажатии во всем body */
             -webkit-tap-highlight-color: transparent;
+            -webkit-touch-callout: none;
         }
         
         .ai-orb {
@@ -27,9 +28,11 @@
             animation: breathe 4s ease-in-out infinite;
             cursor: pointer;
             z-index: 100;
-            /* Защита от выделения текста */
+            /* Защита от выделения и системных рамок */
+            -webkit-tap-highlight-color: transparent;
             -webkit-user-select: none;
             user-select: none;
+            outline: none;
         }
 
         .ai-orb.listening { 
@@ -51,6 +54,7 @@
             border: 1px solid rgba(255,255,255,0.1); 
             padding: 10px 20px; border-radius: 25px; 
             z-index: 200;
+            -webkit-tap-highlight-color: transparent;
         }
 
         @keyframes breathe { 
@@ -148,7 +152,8 @@
         }
 
         function handleTouch(e) {
-            e.preventDefault(); // Запрещаем системный квадрат и зум
+            // Предотвращаем стандартное поведение (квадраты, выделение)
+            if (e.cancelable) e.preventDefault(); 
             toggleAssistant();
         }
 
