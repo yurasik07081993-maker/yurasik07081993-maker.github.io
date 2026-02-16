@@ -3,12 +3,11 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-    <meta name="apple-mobile-web-app-capable" content="yes">
-    <title>AI Stealth</title>
+    <title>Mess AI</title>
     <style>
         body { margin: 0; background: #000; display: flex; align-items: center; justify-content: center; height: 100dvh; overflow: hidden; }
         .ai-orb {
-            width: 250px; height: 250px; border-radius: 50%;
+            width: 260px; height: 260px; border-radius: 50%;
             background: radial-gradient(circle at 35% 35%, #007AFF, #000);
             box-shadow: 0 0 30px rgba(0, 122, 255, 0.2);
             transition: all 0.5s ease;
@@ -16,39 +15,48 @@
         }
         .ai-orb.listening { background: radial-gradient(circle at 35% 35%, #34C759, #000); box-shadow: 0 0 60px rgba(52, 199, 89, 0.4); }
         .ai-orb.active { background: radial-gradient(circle at 35% 35%, #007AFF, #050505); box-shadow: 0 0 100px rgba(0, 122, 255, 0.6); }
-        @keyframes breathe { 0%, 100% { transform: scale(1); opacity: 0.8; } 50% { transform: scale(1.03); opacity: 1; } }
+        .exit-btn {
+            position: absolute; top: 50px; left: 20px;
+            color: rgba(255,255,255,0.4); font-family: sans-serif;
+            text-decoration: none; font-size: 14px; border: 1px solid rgba(255,255,255,0.1);
+            padding: 10px 20px; border-radius: 25px; z-index: 10;
+        }
+        @keyframes breathe { 0%, 100% { transform: scale(1); opacity: 0.8; } 50% { transform: scale(1.04); opacity: 1; } }
     </style>
 </head>
 <body>
+    <a href="#" class="exit-btn" onclick="window.parent.postMessage('closeAI', '*')">← Mess</a>
     <div id="ai-orb" class="ai-orb"></div>
+
     <script>
         const MY_SECRET_KEY = "sk-81d2d12031e243519fcfa3147b040c9b";
         const orb = document.getElementById('ai-orb');
         let recognition = null;
         let isAssistantActive = false;
         let isSpeaking = false;
+        
+        // ПАМЯТЬ КОНТЕКСТА
+        let chatHistory = [
+            { role: "system", content: "Ты — официальный голосовой помощник мессенджера Mess. Твоя задача — помогать пользователям. Отвечай кратко (1-2 предложения). Используй только чистый текст и знаки препинания. КАТЕГОРИЧЕСКИ ЗАПРЕЩЕНО использовать символы: *, _, ( ), [ ], ковычки или любые спецсимволы, которые мешают озвучке. Только буквы и точки с запятыми." }
+        ];
 
         if ('SpeechRecognition' in window || 'webkitSpeechRecognition' in window) {
             const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
             recognition = new SpeechRecognition();
             recognition.lang = 'ru-RU';
-            recognition.interimResults = false;
-            recognition.continuous = false;
-
             recognition.onstart = () => { orb.className = 'ai-orb listening'; };
             recognition.onresult = async (e) => {
                 isSpeaking = true;
-                await askDeepSeek(e.results[0][0].transcript);
+                const text = e.results[0][0].transcript;
+                chatHistory.push({ role: "user", content: text });
+                await askDeepSeek();
             };
             recognition.onend = () => {
-                if (isAssistantActive && !isSpeaking) {
-                    // Увеличиваем паузу до 1.2 сек - это критично для Android, чтобы погасить писк
-                    setTimeout(startListening, 1200);
-                }
+                if (isAssistantActive && !isSpeaking) setTimeout(startListening, 1200);
             };
         }
 
-        async function askDeepSeek(text) {
+        async function askDeepSeek() {
             orb.className = 'ai-orb active';
             try {
                 const response = await fetch('https://api.deepseek.com/chat/completions', {
@@ -56,11 +64,22 @@
                     headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${MY_SECRET_KEY}` },
                     body: JSON.stringify({
                         model: "deepseek-chat",
-                        messages: [{ role: "system", content: "Коротко, 1 фраза." }, { role: "user", content: text }]
+                        messages: chatHistory,
+                        max_tokens: 200
                     })
                 });
                 const data = await response.json();
-                speak(data.choices[0].message.content);
+                let answer = data.choices[0].message.content;
+                
+                // Очистка на случай, если ИИ проигнорировал системную инструкцию
+                answer = answer.replace(/[*\(\)_"']/g, ''); 
+                
+                chatHistory.push({ role: "assistant", content: answer });
+                
+                // Ограничиваем память последними 6 сообщениями (плюс системный промпт)
+                if (chatHistory.length > 7) chatHistory.splice(1, 2);
+
+                speak(answer);
             } catch (e) { isSpeaking = false; startListening(); }
         }
 
@@ -71,7 +90,7 @@
             utter.onstart = () => { isSpeaking = true; orb.className = 'ai-orb active'; };
             utter.onend = () => {
                 isSpeaking = false;
-                if (isAssistantActive) setTimeout(startListening, 1500); // Самая длинная пауза для "тишины"
+                if (isAssistantActive) setTimeout(startListening, 1500);
             };
             window.speechSynthesis.speak(utter);
         }
